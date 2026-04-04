@@ -5,6 +5,9 @@ import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.service.TelemetryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -23,8 +26,10 @@ public class TelemetryController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<Telemetry> getAllTelemetry(){
-        return service.getAll();
+    public Page<Telemetry> getAllTelemetry(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size){
+        return service.getAll(PageRequest.of(page, size, Sort.by("timestamp").descending()));
     }
 }
 

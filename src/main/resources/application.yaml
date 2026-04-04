@@ -1,20 +1,14 @@
 spring:
   application:
     name: telemetry-service
-  datasource:
-    url: jdbc:postgresql://localhost:5433/telemetry_db
-    username: user
-    password: password
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+  profiles:
+    active: dev #development mode
 
-telemetry:
-  thresholds:
-    voltage:
-      min: 207.0
-      max: 253.0
-    frequency:
-      min: 49.0
-      max: 51.0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

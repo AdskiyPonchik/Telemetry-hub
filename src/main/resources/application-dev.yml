@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/telemetry_db
+    username: user
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+telemetry:
+  thresholds:
+    voltage:
+      min: 207.0
+      max: 253.0
+    frequency:
+      min: 49.0
+      max: 51.0

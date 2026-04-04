@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-prod:5432/telemetry_real_db
+  jpa:
+    hibernate:
+      ddl-auto: validate # database shouldn't change on production automatically
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
