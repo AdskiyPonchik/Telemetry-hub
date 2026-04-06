@@ -16,22 +16,6 @@ public class AnalyticsService {
 
     public AnalyticsResponse getSensorStats(String sensorId){
         LocalDateTime yesterday = LocalDateTime.now().minusHours(24);
-        List<Telemetry> data = repo.findBySensorIdAndTimestampAfter(sensorId, yesterday);
-
-        if(data.isEmpty()){
-            return AnalyticsResponse.builder().sensorId(sensorId).totalReadings(0).build();
-        }
-
-        long alarms = data.stream().filter(t -> "ALARM".equals(t.getStatus())).count();
-        double avgVolt = data.stream().mapToDouble(Telemetry::getVoltage).average().orElse(0.0);
-        double avgFreq = data.stream().mapToDouble(Telemetry::getFrequency).average().orElse(0.0);
-
-        return AnalyticsResponse.builder()
-                .sensorId(sensorId)
-                .totalReadings(data.size())
-                .alarmCount(alarms)
-                .avgVoltage(avgVolt)
-                .avgFrequency(avgFreq)
-                .build();
+        return repo.getAggregatedStats(sensorId, yesterday);
     }
 }

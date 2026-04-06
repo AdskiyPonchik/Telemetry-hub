@@ -45,12 +45,11 @@ public class TelemetryService {
 
             repository.save(telemetry);
         } catch (Exception e){
-            Map<String, String> details = Map.of(
-                    "sensorId", String.valueOf(request.getSensorId()),
-                    "location", request.getLocation(),
-                    "exception", e.getClass().getSimpleName(),
-                    "message", e.getMessage() != null ? e.getMessage() : "No message"
-            );
+            Map<String, String> details = new java.util.HashMap<>();
+            details.put("sensorId", request.getSensorId());
+            details.put("location", request.getLocation()); // Если null - запишет null, ошибки не будет
+            details.put("exception", e.getClass().getSimpleName());
+            details.put("message", e.getMessage() != null ? e.getMessage() : "No message");
             throw new TelemetryProcessingException("Failed to save telemetry for sensor: " + request.getSensorId(), e, details);
         }
     }
