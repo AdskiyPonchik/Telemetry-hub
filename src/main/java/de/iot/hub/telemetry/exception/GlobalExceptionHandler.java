@@ -37,4 +37,15 @@ public class GlobalExceptionHandler {
                 null
         );
     }
+
+    @ExceptionHandler(TelemetryProcessingException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse processTelemetryError(TelemetryProcessingException ex){
+        return new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                LocalDateTime.now(),
+                ex.getErrorDetails()
+        );
+    }
 }
