@@ -12,3 +12,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+telemetry:
+  thresholds:
+    voltage:
+      min: 207.0
+      max: 253.0
+    frequency:
+      min: 49.0
+      max: 51.0
