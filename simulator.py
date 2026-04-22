@@ -21,12 +21,16 @@ def generate_telemetry(step):
         voltage = random.choice([190.0, 260.0])
         print(f"!!! Alarm: {voltage}V")
 
+    temperature = random.uniform(-20.0, 50.0)
+    vibration = random.uniform(0, 15.0)
     return {
         "sensorId": SENSOR_ID,
         "location": LOCATION,
         "voltage": round(voltage, 2),
         "current": round(random.uniform(4.5, 5.5), 2),
         "frequency": round(base_frequency + random.uniform(-0.05, 0.05), 2),
+        "temperature": temperature,
+        "vibration": vibration,
         "status": "OPERATIONAL"
     }
 

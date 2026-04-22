@@ -19,5 +19,11 @@ public class TelemetryRequest {
     @NotNull @Positive
     private Double frequency;
 
+    @NotNull
+    private Double temperature;
+
+    @NotNull @PositiveOrZero
+    private Double vibration;
+
     private String status;
 }

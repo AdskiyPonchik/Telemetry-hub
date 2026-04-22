@@ -23,6 +23,9 @@ public class Telemetry {
     private Double current;
     private Double frequency;
 
+    private Double temperature;
+    private Double vibration;
+
     private String status;
     private LocalDateTime timestamp;
 }
