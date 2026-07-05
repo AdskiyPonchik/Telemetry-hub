@@ -4,6 +4,7 @@ import de.iot.hub.telemetry.config.TelemetryProperties;
 import de.iot.hub.telemetry.dto.TelemetryRequest;
 import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
+import de.iot.hub.telemetry.model.TelemetryStatus;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,7 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         verifySavedTelemetry(telemetry -> {
-            assertEquals("ALARM", telemetry.getStatus());
+            assertEquals(TelemetryStatus.ALARM, telemetry.getStatus());
         });
     }
 
@@ -84,7 +85,7 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         verifySavedTelemetry(telemetry -> {
-            assertEquals("ALARM", telemetry.getStatus());
+            assertEquals(TelemetryStatus.ALARM, telemetry.getStatus());
         });
     }
 
@@ -102,7 +103,7 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         verifySavedTelemetry(telemetry -> {
-            assertEquals("OK", telemetry.getStatus());
+            assertEquals(TelemetryStatus.OK, telemetry.getStatus());
         });
     }
 
@@ -120,7 +121,7 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         verifySavedTelemetry(telemetry -> {
-            assertEquals("ALARM_AND_MECHANICAL_DAMAGE", telemetry.getStatus());
+            assertEquals(TelemetryStatus.ALARM_AND_MECHANICAL_DAMAGE, telemetry.getStatus());
         });
     }
 
@@ -143,7 +144,7 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         verifySavedTelemetry(telemetry -> {
-            assertEquals("OK", telemetry.getStatus());
+            assertEquals(TelemetryStatus.OK, telemetry.getStatus());
         });
     }
 

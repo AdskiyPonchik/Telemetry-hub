@@ -1,13 +1,15 @@
 package de.iot.hub.telemetry.model;
+
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-
 @Entity
 @Table(name = "telemetry_data")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Telemetry {
     @Id
@@ -26,6 +28,7 @@ public class Telemetry {
     private Double temperature;
     private Double vibration;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private TelemetryStatus status;
     private LocalDateTime timestamp;
 }
