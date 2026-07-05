@@ -1,35 +1,46 @@
 package de.iot.hub.telemetry.config;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 
-@Data
+@Getter
+@Setter
 @Validated
-@Configuration
-@ConfigurationProperties(prefix = "telemetry.thresholds")
+@ConfigurationProperties(prefix = "telemetry")
 public class TelemetryProperties {
 
-    @Valid
-    private Threshold voltage = new Threshold();
+    private final Voltage voltage = new Voltage();
+    private final Frequency frequency = new Frequency();
+    private final Thresholds thresholds = new Thresholds();
+    private final Analytics analytics = new Analytics();
 
-    @Valid
-    private Threshold frequency = new Threshold();
+    @Getter
+    @Setter
+    public static class Voltage {
+        @NotNull private Double min;
+        @NotNull private Double max;
+    }
 
-    @Data
-    public static class Threshold{
-        @NotNull
-        @Min(0)
-        @Max(1000)
-        private Double min;
+    @Getter
+    @Setter
+    public static class Frequency {
+        @NotNull private Double min;
+        @NotNull private Double max;
+    }
 
-        @NotNull
-        @Min(0)
-        @Max(1000)
-        private Double max;
+    @Getter
+    @Setter
+    public static class Thresholds {
+        @NotNull private Double defaultMaxTemperature;
+        @NotNull private Double defaultMaxVibration;
+    }
+
+    @Getter
+    @Setter
+    public static class Analytics {
+        @NotNull private Integer windowHours;
     }
 }

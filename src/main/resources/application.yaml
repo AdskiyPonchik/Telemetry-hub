@@ -14,10 +14,14 @@ management:
       show-details: always
 
 telemetry:
+  voltage:
+    min: 198.0
+    max: 242.0
+  frequency:
+    min: 49.0
+    max: 51.0
   thresholds:
-    voltage:
-      min: 207.0
-      max: 253.0
-    frequency:
-      min: 49.0
-      max: 51.0
+    default-max-temperature: 80.0
+    default-max-vibration: 10.0
+  analytics:
+    window-hours: 24

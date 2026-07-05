@@ -2,7 +2,7 @@ package de.iot.hub.telemetry.service;
 
 import de.iot.hub.telemetry.config.TelemetryProperties;
 import de.iot.hub.telemetry.dto.TelemetryRequest;
-import de.iot.hub.telemetry.exception.TelemetryProcessingException;
+import de.iot.hub.telemetry.dto.TelemetryResponse;
 import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.model.TelemetryStatus;
@@ -10,11 +10,10 @@ import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,34 +24,28 @@ public class TelemetryService {
 
     @Transactional
     public void processTelemetry(TelemetryRequest request) {
-        try {
-            SensorThresholds config = thresholdRepository.findById(request.getSensorId())
-                    .orElse(new SensorThresholds(request.getSensorId(), 80.0, 10.0));
-            TelemetryStatus finalStatus = statusCheck(request.getVoltage(), request.getFrequency(),
-                    request.getTemperature(), request.getVibration(), config);
+        SensorThresholds config = thresholdRepository.findById(request.getSensorId())
+                .orElseGet(() -> new SensorThresholds(
+                        request.getSensorId(),
+                        properties.getThresholds().getDefaultMaxTemperature(),
+                        properties.getThresholds().getDefaultMaxVibration()));
 
-            Telemetry telemetry = Telemetry.builder()
-                    .sensorId(request.getSensorId())
-                    .location(request.getLocation())
-                    .voltage(request.getVoltage())
-                    .current(request.getCurrent())
-                    .frequency(request.getFrequency())
-                    .temperature(request.getTemperature())
-                    .vibration(request.getVibration())
-                    .status(finalStatus)
-                    .timestamp(LocalDateTime.now())
-                    .build();
-            repository.save(telemetry);
+        TelemetryStatus finalStatus = statusCheck(request.getVoltage(), request.getFrequency(),
+                request.getTemperature(), request.getVibration(), config);
 
-        } catch (Exception e) {
-            Map<String, String> details = new java.util.HashMap<>();
-            details.put("sensorId", request.getSensorId());
-            details.put("location", request.getLocation());
-            details.put("exception", e.getClass().getSimpleName());
-            details.put("message", e.getMessage() != null ? e.getMessage() : "No message");
-            throw new TelemetryProcessingException("Failed to save telemetry for sensor: " + request.getSensorId(), e,
-                    details);
-        }
+        Telemetry telemetry = Telemetry.builder()
+                .sensorId(request.getSensorId())
+                .location(request.getLocation())
+                .voltage(request.getVoltage())
+                .current(request.getCurrent())
+                .frequency(request.getFrequency())
+                .temperature(request.getTemperature())
+                .vibration(request.getVibration())
+                .status(finalStatus)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        repository.save(telemetry);
     }
 
     private TelemetryStatus statusCheck(Double voltage, Double frequency, Double temperature,
@@ -76,6 +69,24 @@ public class TelemetryService {
         }
 
         return TelemetryStatus.OK;
+    }
+
+    public Page<TelemetryResponse> getAll(Pageable pageable) {
+        return repository.findAll(pageable).map(this::convertToResponse);
+    }
+
+    private TelemetryResponse convertToResponse(Telemetry telemetry) {
+        return new TelemetryResponse(
+                telemetry.getId(),
+                telemetry.getSensorId(),
+                telemetry.getLocation(),
+                telemetry.getVoltage(),
+                telemetry.getCurrent(),
+                telemetry.getFrequency(),
+                telemetry.getTemperature(),
+                telemetry.getVibration(),
+                telemetry.getStatus(),
+                telemetry.getTimestamp());
     }
 
 }
