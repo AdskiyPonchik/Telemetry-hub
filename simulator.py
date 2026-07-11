@@ -30,8 +30,7 @@ def generate_telemetry(step):
         "current": round(random.uniform(4.5, 5.5), 2),
         "frequency": round(base_frequency + random.uniform(-0.05, 0.05), 2),
         "temperature": temperature,
-        "vibration": vibration,
-        "status": "OPERATIONAL"
+        "vibration": vibration
     }
 
 def main():
@@ -42,7 +41,7 @@ def main():
         try:
             response = requests.post(API_URL, json=data)
             if response.status_code == 201:
-                print(f"[{data['status']}] V: {data['voltage']}V, F: {data['frequency']}Hz -> OK")
+                print(f"[sent] V: {data['voltage']}V, F: {data['frequency']}Hz -> OK")
             else:
                 print(f"API error: {response.status_code} - {response.text}")
         except Exception as e:

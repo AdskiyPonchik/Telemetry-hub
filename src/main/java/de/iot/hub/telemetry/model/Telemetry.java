@@ -18,7 +18,6 @@ public class Telemetry {
 
     private String sensorId;
     private String location;
-    private String sensorType;
 
     // Metrics
     private Double voltage;

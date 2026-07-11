@@ -3,6 +3,8 @@ spring:
     name: telemetry-service
   profiles:
     active: dev #development mode
+  jpa:
+    open-in-view: false
 
 management:
   endpoints:

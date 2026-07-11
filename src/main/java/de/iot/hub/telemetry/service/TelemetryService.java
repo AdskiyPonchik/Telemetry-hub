@@ -10,11 +10,13 @@ import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelemetryService {
@@ -32,6 +34,12 @@ public class TelemetryService {
 
         TelemetryStatus finalStatus = statusCheck(request.getVoltage(), request.getFrequency(),
                 request.getTemperature(), request.getVibration(), config);
+
+        if (finalStatus != TelemetryStatus.OK) {
+            log.warn("Sensor {} reported abnormal reading: status={}, voltage={}, frequency={}, temperature={}, vibration={}",
+                    request.getSensorId(), finalStatus, request.getVoltage(), request.getFrequency(),
+                    request.getTemperature(), request.getVibration());
+        }
 
         Telemetry telemetry = Telemetry.builder()
                 .sensorId(request.getSensorId())

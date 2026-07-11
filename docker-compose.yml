@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     container_name: iot-telemetry-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: telemetry_db
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-telemetry_db}
     ports:
       - "5433:5432"
     volumes:
@@ -18,9 +18,9 @@ services:
       - db
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/telemetry_db
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB:-telemetry_db}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-user}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password}
     ports:
       - "8080:8080"
 
@@ -32,7 +32,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
 

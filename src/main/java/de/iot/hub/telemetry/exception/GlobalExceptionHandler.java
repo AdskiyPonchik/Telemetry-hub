@@ -38,14 +38,14 @@ public class GlobalExceptionHandler {
                 null);
     }
 
-    @ExceptionHandler(TelemetryProcessingException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse processTelemetryError(TelemetryProcessingException ex) {
+    @ExceptionHandler(SensorDataNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleSensorDataNotFound(SensorDataNotFoundException ex) {
         return new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
                 LocalDateTime.now(),
-                ex.getErrorDetails());
+                null);
     }
 
     @ExceptionHandler(Exception.class)

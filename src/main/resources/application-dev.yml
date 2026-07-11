@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/telemetry_db
-    username: user
-    password: password
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/telemetry_db}
+    username: ${DB_USERNAME:user}
+    password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate # schema is managed by Flyway migrations
     show-sql: true

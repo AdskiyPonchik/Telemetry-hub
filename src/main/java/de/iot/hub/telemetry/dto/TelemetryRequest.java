@@ -1,7 +1,7 @@
 package de.iot.hub.telemetry.dto;
+
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import java.time.LocalDateTime;
 
 @Data
 public class TelemetryRequest {
@@ -10,20 +10,22 @@ public class TelemetryRequest {
 
     private String location;
 
-    @NotNull @Positive
+    @NotNull
+    @Positive
     private Double voltage;
 
-    @NotNull @Positive
+    @NotNull
+    @Positive
     private Double current;
 
-    @NotNull @Positive
+    @NotNull
+    @Positive
     private Double frequency;
 
     @NotNull
     private Double temperature;
 
-    @NotNull @PositiveOrZero
+    @NotNull
+    @PositiveOrZero
     private Double vibration;
-
-    private String status;
 }
