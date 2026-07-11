@@ -1,134 +1,112 @@
-# Telemetry Hub
+# ⚡ Telemetry Hub
 
-[![CI](https://github.com/AdskiyPonchik/Telemetry-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/AdskiyPonchik/Telemetry-hub/actions/workflows/ci.yml)
+**Industrial IoT telemetry ingestion & analytics service** built with Spring Boot.
 
-An industrial IoT telemetry backend. Sensors post electrical and mechanical readings (voltage, frequency, temperature, vibration); the service validates each reading, evaluates it against global limits and per-sensor thresholds, stores it with a computed status in PostgreSQL, and exposes paginated browsing plus windowed analytics per sensor.
+Receives readings from power-grid sensors (voltage, current, frequency, temperature, vibration), validates them, detects anomalies in real time and exposes aggregated analytics over a REST API. Ships with a Python sensor simulator that generates realistic telemetry — including random fault injection — so the whole pipeline can be demoed locally.
 
-## Tech stack
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-runtime-336791?logo=postgresql&logoColor=white)
+![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven)
 
-- **Java 21**, **Spring Boot 4** (Web MVC, Data JPA, Validation, Actuator)
-- **PostgreSQL 16**, schema managed by **Flyway** migrations
-- **springdoc-openapi** (Swagger UI)
-- **JUnit 5, Mockito, Testcontainers** integration tests, **JaCoCo** coverage
-- **Docker / docker-compose**, **GitHub Actions** CI
-- Python load simulator for realistic demo traffic
+## ✨ Features
 
-## Architecture
+- 📥 **Telemetry ingestion** — validated `POST` endpoint (Jakarta Bean Validation) for sensor readings
+- 🚨 **Anomaly detection** — every reading is classified as `OK`, `ALARM`, `MECHANICAL_DAMAGE` or both, based on configurable voltage/frequency corridors and per-sensor temperature/vibration thresholds
+- 📊 **Analytics API** — per-sensor aggregates over a sliding time window (reading count, alarm count, average voltage & frequency)
+- ⚙️ **Externalized configuration** — all limits (`198–242 V`, `49–51 Hz`, max temperature/vibration, analytics window) live in `application.yaml` via `@ConfigurationProperties`
+- 🧩 **Per-sensor thresholds** — override defaults for individual sensors, stored in the database
+- 🩺 **Observability** — Spring Boot Actuator (`health`, `info`, `metrics`)
+- 🛰️ **Sensor simulator** — `simulator.py` streams sinusoidal voltage with noise and ~2% random fault spikes
+- 🧪 **Tests** — service-layer unit tests + Spring Boot integration tests
+- 🌗 **Profiles** — separate `dev` / `prod` configurations
 
-```mermaid
-flowchart LR
-    SIM[simulator.py<br/>synthetic sensor] -->|POST /api/v1/telemetry| APP
+## 🏗️ Architecture
 
-    subgraph Spring Boot app
-        APP[REST controllers] --> SVC[Services<br/>threshold evaluation,<br/>analytics window]
-        SVC --> REPO[Spring Data JPA<br/>repositories]
-    end
-
-    REPO --> DB[(PostgreSQL<br/>Flyway-managed schema)]
-    GRAF[Grafana] -.reads.-> DB
-    CLIENT[API consumer] -->|GET readings / analytics| APP
+```
+simulator.py ──POST──▶ TelemetryController ──▶ TelemetryService ──▶ PostgreSQL
+                                                    │  (validation + status
+                                                    │   classification)
+                       AnalyticsController ◀──── AnalyticsService
+                        GET /analytics/{id}        (windowed aggregation)
 ```
 
-Each reading is evaluated on ingest:
+Classic layered design: `controller → service → repository`, DTOs decoupled from JPA entities, centralized error handling via `@RestControllerAdvice` (`GlobalExceptionHandler`).
 
-| Condition | Stored status |
-|---|---|
-| voltage/frequency outside global limits | `ALARM` |
-| temperature/vibration above the sensor's thresholds | `MECHANICAL_DAMAGE` |
-| both at once | `ALARM_AND_MECHANICAL_DAMAGE` |
-| everything within limits | `OK` |
+## 🔌 API
 
-Global limits live in [application.yaml](src/main/resources/application.yaml) (`telemetry.*`, validated at startup). Per-sensor thresholds come from the `sensor_configs` table, with configurable defaults for unknown sensors.
+| Method | Endpoint                        | Description                                        |
+|--------|---------------------------------|----------------------------------------------------|
+| `POST` | `/api/v1/telemetry`             | Ingest a sensor reading → `201 Created`            |
+| `GET`  | `/api/v1/telemetry`             | Paginated list of stored telemetry (`Pageable`)    |
+| `GET`  | `/api/v1/analytics/{sensorId}`  | Aggregated stats for a sensor (24h window default) |
 
-## Quick start
-
-Requires Docker.
-
-```bash
-cp .env.example .env       # optional: adjust credentials
-docker compose up --build
-```
-
-This starts PostgreSQL, the application (port 8080) and Grafana (port 3000). Then feed it data:
-
-```bash
-python -m venv venv && source venv/bin/activate && pip install requests
-python simulator.py
-```
-
-The simulator posts one reading per second with a sinusoidal voltage curve and occasional injected voltage spikes.
-
-### Run locally for development
-
-```bash
-docker compose up db       # only the database
-./mvnw spring-boot:run     # dev profile, connects to localhost:5433
-```
-
-> Upgrading from a version before Flyway was introduced? Reset the database volume once
-> (`docker compose down -v && docker compose up db`) so Flyway can create the schema from scratch.
-
-## API
-
-Interactive docs: **http://localhost:8080/swagger-ui.html**
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/v1/telemetry` | Ingest a reading (validated; status computed server-side) |
-| `GET` | `/api/v1/telemetry?page=0&size=20` | Paginated readings, newest first |
-| `GET` | `/api/v1/analytics/{sensorId}` | Aggregated stats for the last 24h (configurable); `404` if no data |
+**Example request:**
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/telemetry \
   -H "Content-Type: application/json" \
-  -d '{"sensorId":"MGD-PWR-01","location":"Magdeburg-Nord","voltage":260.0,"current":5.1,"frequency":50.0,"temperature":45.0,"vibration":2.5}'
-
-curl http://localhost:8080/api/v1/analytics/MGD-PWR-01
+  -d '{
+    "sensorId": "MGD-PWR-01",
+    "location": "Magdeburg-Nord",
+    "voltage": 231.4,
+    "current": 5.1,
+    "frequency": 50.02,
+    "temperature": 36.5,
+    "vibration": 3.2
+  }'
 ```
+
+**Example analytics response:**
 
 ```json
 {
   "sensorId": "MGD-PWR-01",
-  "totalReadings": 42,
-  "alarmCount": 3,
-  "avgVoltage": 231.7,
-  "avgFrequency": 50.01
+  "totalReadings": 1440,
+  "alarmCount": 27,
+  "avgVoltage": 230.12,
+  "avgFrequency": 49.98
 }
 ```
 
-Validation failures and unknown sensors return a structured error body (`status`, `message`, `timestamp`, per-field `errors`) via a global `@RestControllerAdvice`.
+## 🚀 Getting started
 
-## Configuration
-
-| Property | Default | Meaning |
-|---|---|---|
-| `telemetry.voltage.min/max` | 198 / 242 | Global electrical limits → `ALARM` |
-| `telemetry.frequency.min/max` | 49 / 51 | Global frequency limits → `ALARM` |
-| `telemetry.thresholds.default-max-temperature` | 80 | Fallback for sensors without a `sensor_configs` row |
-| `telemetry.thresholds.default-max-vibration` | 10 | Fallback vibration threshold |
-| `telemetry.analytics.window-hours` | 24 | Analytics aggregation window |
-
-Database credentials are supplied via environment variables (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD` for local runs; see [.env.example](.env.example) for docker compose).
-
-## Testing
+**Prerequisites:** JDK 21, PostgreSQL, Python 3 (for the simulator).
 
 ```bash
-./mvnw verify              # Docker required (Testcontainers)
+# 1. Start the service (dev profile is active by default)
+./mvnw spring-boot:run
+
+# 2. Feed it with simulated sensor data
+pip install requests
+python simulator.py
 ```
 
-- Unit tests for the threshold/status logic (Mockito)
-- `@WebMvcTest` slices: validation errors, error contract, JSON mapping
-- `@DataJpaTest` against a real PostgreSQL container: the JPQL aggregation, alarm counting and time-window filtering
-- Full `@SpringBootTest` end-to-end flow: Flyway migration → ingest → analytics
-- Coverage report: `target/site/jacoco/index.html`
+Run tests:
 
-## Roadmap
+```bash
+./mvnw test
+```
 
-- [ ] Micrometer → Prometheus metrics with a provisioned Grafana dashboard
-- [ ] API-key authentication for the ingest endpoint
-- [ ] Async ingestion pipeline (Kafka) for burst traffic
-- [ ] Data retention job for old readings
+## ⚙️ Configuration
 
-## License
+Key settings in `src/main/resources/application.yaml`:
 
-Proprietary — see [LICENCE](LICENCE).
+```yaml
+telemetry:
+  voltage:    { min: 198.0, max: 242.0 }   # nominal grid corridor
+  frequency:  { min: 49.0,  max: 51.0 }
+  thresholds:
+    default-max-temperature: 80.0
+    default-max-vibration: 10.0
+  analytics:
+    window-hours: 24
+```
+
+## 🛠️ Tech stack
+
+Java 21 · Spring Boot 4 (Web MVC, Data JPA, Validation, Actuator) · PostgreSQL · Lombok · Maven · Python (simulator)
+
+## 📄 License
+
+See [LICENCE](LICENCE).
