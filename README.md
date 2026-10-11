@@ -82,11 +82,46 @@ pip install requests
 python simulator.py
 ```
 
-Run tests:
+Run tests (requires a running Docker daemon accessible to your user;
+Testcontainers creates a temporary PostgreSQL instance):
 
 ```bash
 ./mvnw test
 ```
+
+## Continuous integration
+
+GitHub Actions runs on pushes to `main`, pull requests targeting `main`, and manual
+runs from the **Actions → CI → Run workflow** page once the workflow is on the default branch.
+
+- **Build and test** uses Temurin JDK 21 and the Maven Wrapper to run
+  `./mvnw --batch-mode --no-transfer-progress clean verify`. This includes unit,
+  MVC, and PostgreSQL integration tests, Flyway migrations, JAR packaging, and JaCoCo coverage.
+- Testcontainers manages PostgreSQL on the runner. No `.env`, repository secrets,
+  external database, or `docker compose up` is required.
+- **Build Docker image** checks the multi-stage Dockerfile after tests pass.
+  The image is not pushed to a registry or deployed.
+- Each run saves available test/coverage reports for 14 days, including test reports
+  after failures, and the application JAR for 7 days after a successful build.
+  Coverage is generated during `verify`, so it may be absent when tests fail.
+- Older runs for the same branch or pull request are cancelled. Jobs have a
+  15-minute timeout and the workflow token has read-only repository access.
+
+Mockito is loaded explicitly as a test JVM agent on Java 21, alongside JaCoCo.
+No extra `JAVA_TOOL_OPTIONS` are needed. To reproduce both checks locally:
+
+```bash
+./mvnw --batch-mode --no-transfer-progress clean verify
+docker build --tag telemetry-service:ci .
+```
+
+After the first successful GitHub run, configure a repository ruleset or branch
+protection for `main` requiring **Build and test** and **Build Docker image** before
+merging. This is a repository setting, not something the workflow enables itself.
+
+Dependabot checks GitHub Actions, Maven dependencies, and Docker base images weekly.
+Action revisions are pinned to commit hashes; review and merge update pull requests
+to keep them current.
 
 ## ⚙️ Configuration
 

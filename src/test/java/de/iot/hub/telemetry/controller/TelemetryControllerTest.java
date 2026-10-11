@@ -112,4 +112,29 @@ class TelemetryControllerTest {
                 .andExpect(jsonPath("$.content[0].sensorId").value("MGD-PWR-01"))
                 .andExpect(jsonPath("$.content[0].status").value("OK"));
     }
+
+    @Test
+    void sensorIdExceedsMaxLength_returns400AndRejectsRequest() throws Exception {
+        String tooLongSensorId = "A".repeat(256);
+        String invalidBody = """
+            {
+              "sensorId": "%s",
+              "location": "Magdeburg-Nord",
+              "voltage": 230.0,
+              "current": 5.0,
+              "frequency": 50.0,
+              "temperature": 45.0,
+              "vibration": 2.5
+            }
+            """.formatted(tooLongSensorId);
+
+        mockMvc.perform(post("/api/v1/telemetry")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation Failed"))
+                .andExpect(jsonPath("$.errors.sensorId").exists());
+
+        verifyNoInteractions(service);
+    }
 }

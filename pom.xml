@@ -17,6 +17,8 @@
 	<properties>
 		<java.version>21</java.version>
 		<springdoc.version>3.0.3</springdoc.version>
+		<!-- JaCoCo fills this before Surefire starts; keep it defined when coverage is skipped. -->
+		<argLine/>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -100,6 +102,27 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>test-agent-paths</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<!-- Explicit Mockito instrumentation on Java 21+, alongside the JaCoCo agent. -->
+					<argLine>@{argLine} "-javaagent:${org.mockito:mockito-core:jar}"</argLine>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

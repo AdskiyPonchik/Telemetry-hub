@@ -1,0 +1,9 @@
+# Only send the files used by the multi-stage Dockerfile to the builder.
+**
+!Dockerfile
+!pom.xml
+!mvnw
+!.mvn/
+!.mvn/**
+!src/
+!src/**
