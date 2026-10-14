@@ -6,14 +6,18 @@ import de.iot.hub.telemetry.dto.TelemetryResponse;
 import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.model.TelemetryStatus;
+import de.iot.hub.telemetry.model.TemperatureAlertState;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
+import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
+import de.iot.hub.telemetry.service.TemperatureAlertEvaluator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -23,6 +27,9 @@ public class TelemetryService {
     private final TelemetryRepository repository;
     private final TelemetryProperties properties;
     private final SensorThresholdRepository thresholdRepository;
+    private final TemperatureAlertEvaluator evaluator;
+    private final TemperatureAlertStateRepository temperatureAlertStateRepository;
+
 
     @Transactional
     public void processTelemetry(TelemetryRequest request) {
@@ -53,11 +60,13 @@ public class TelemetryService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
+        updateTemperatureAlert(request, config);
         repository.save(telemetry);
     }
 
+    @Transactional
     private TelemetryStatus statusCheck(Double voltage, Double frequency, Double temperature,
-            Double vibration, SensorThresholds config) {
+                                        Double vibration, SensorThresholds config) {
         boolean electricalAlarm = voltage < properties.getVoltage().getMin() ||
                 voltage > properties.getVoltage().getMax() ||
                 frequency < properties.getFrequency().getMin() ||
@@ -83,6 +92,7 @@ public class TelemetryService {
         return repository.findAll(pageable).map(this::convertToResponse);
     }
 
+
     private TelemetryResponse convertToResponse(Telemetry telemetry) {
         return new TelemetryResponse(
                 telemetry.getId(),
@@ -95,6 +105,25 @@ public class TelemetryService {
                 telemetry.getVibration(),
                 telemetry.getStatus(),
                 telemetry.getTimestamp());
+    }
+
+    private void updateTemperatureAlert(
+            TelemetryRequest request,
+            SensorThresholds confid
+    ) {
+        String sensorId = request.getSensorId();
+        temperatureAlertStateRepository.initializeIfAbsent(sensorId);
+
+        TemperatureAlertState state = temperatureAlertStateRepository.findBySensorIdForUpdate(sensorId)
+                .orElseThrow();
+
+        int updatedBreaches = evaluator.evaluate(request.getTemperature(),
+                confid.getMaxTemperature(),
+                state.getConsecutiveBreaches());
+
+        state.setConsecutiveBreaches(updatedBreaches);
+
+        temperatureAlertStateRepository.save(state);
     }
 
 }

@@ -3,14 +3,17 @@ package de.iot.hub.telemetry.service;
 import de.iot.hub.telemetry.config.TelemetryProperties;
 import de.iot.hub.telemetry.dto.TelemetryRequest;
 import de.iot.hub.telemetry.model.Telemetry;
+import de.iot.hub.telemetry.model.TemperatureAlertState;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
+import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -20,10 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 class ClassificationFixtureTest {
 
@@ -34,19 +39,26 @@ class ClassificationFixtureTest {
         TelemetryProperties properties = propertiesFrom(fixture.thresholds());
         TelemetryRepository telemetryRepository = mock(TelemetryRepository.class);
         SensorThresholdRepository thresholdRepository = mock(SensorThresholdRepository.class);
-        TelemetryService service = new TelemetryService(telemetryRepository, properties, thresholdRepository);
+        TemperatureAlertStateRepository stateRepository = mock(TemperatureAlertStateRepository.class);
+        when(stateRepository.findBySensorIdForUpdate(anyString())).thenAnswer(invocation -> {
+            TemperatureAlertState state = new TemperatureAlertState();
+            state.setSensorId(invocation.getArgument(0));
+            return Optional.of(state);
+        });
+        TelemetryService service = new TelemetryService(telemetryRepository, properties, thresholdRepository,
+                new TemperatureAlertEvaluator(), stateRepository);
 
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
 
             for (FixtureCase fixtureCase : fixture.cases()) {
-                clearInvocations(telemetryRepository, thresholdRepository);
+                clearInvocations(telemetryRepository, thresholdRepository, stateRepository);
                 Set<ConstraintViolation<TelemetryRequest>> violations = validator.validate(fixtureCase.input());
 
                 if (fixtureCase.httpStatus() == 400) {
                     assertFalse(violations.isEmpty(), fixtureCase.name());
                     assertNull(fixtureCase.status(), fixtureCase.name());
-                    verifyNoInteractions(telemetryRepository, thresholdRepository);
+                    verifyNoInteractions(telemetryRepository, thresholdRepository, stateRepository);
                     continue;
                 }
 
