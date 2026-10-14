@@ -9,6 +9,34 @@ Receives readings from power-grid sensors (voltage, current, frequency, temperat
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-runtime-336791?logo=postgresql&logoColor=white)
 ![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven)
 
+## Interactive showcase
+
+The English/German showcase in `showcase/` makes the complete sensor-to-database
+path visible: a live chart, effective thresholds, four classification states,
+recent readings, and PostgreSQL aggregates. A separate browser-only sandbox lets
+visitors explore faults, threshold boundaries, and rejected input without changing
+the shared live stream. Measurements are synthetic; live processing and storage
+use the real service.
+
+For a local visual preview, run `python3 -m http.server 8092 --bind 127.0.0.1 --directory showcase`
+and open `http://127.0.0.1:8092/?preview=1`. Preview data is explicitly labelled;
+the ordinary page never replaces an unavailable backend with generated readings.
+
+The dedicated Raspberry Pi deployment uses `compose.showcase.yml`: Nginx serves
+the page and a bounded read-only snapshot; the Python simulator writes through
+the private container network. The `demo` Spring profile adds the snapshot and
+seven-day retention for the configured demo sensor. Existing APIs remain unchanged.
+
+See [showcase behavior and tests](docs/showcase.md) and
+[Raspberry Pi / Cloudflare deployment](docs/showcase-deployment.md).
+
+The [architecture guide (RU)](docs/architecture.md) explains the data flow,
+application layers and deployment boundaries. The reusable
+[visual design guide (RU)](DESIGN_SYSTEM.md) defines the palette, typography and
+component principles for this and future project sites.
+The intended public address is `https://telemetry.adskiyponchik.dev`; follow the
+deployment checks before treating it as live.
+
 ## ✨ Features
 
 - 📥 **Telemetry ingestion** — validated `POST` endpoint (Jakarta Bean Validation) for sensor readings
@@ -97,10 +125,11 @@ runs from the **Actions → CI → Run workflow** page once the workflow is on t
 - **Build and test** uses Temurin JDK 21 and the Maven Wrapper to run
   `./mvnw --batch-mode --no-transfer-progress clean verify`. This includes unit,
   MVC, and PostgreSQL integration tests, Flyway migrations, JAR packaging, and JaCoCo coverage.
+- The build job also runs the JavaScript classification fixtures and Python simulator tests.
 - Testcontainers manages PostgreSQL on the runner. No `.env`, repository secrets,
   external database, or `docker compose up` is required.
-- **Build Docker image** checks the multi-stage Dockerfile after tests pass.
-  The image is not pushed to a registry or deployed.
+- **Build Docker image** checks the multi-stage Java Dockerfile and the showcase /
+  simulator images after tests pass. Images are not pushed to a registry or deployed.
 - Each run saves available test/coverage reports for 14 days, including test reports
   after failures, and the application JAR for 7 days after a successful build.
   Coverage is generated during `verify`, so it may be absent when tests fail.

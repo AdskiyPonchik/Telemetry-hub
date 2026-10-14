@@ -1,0 +1,90 @@
+name: telemetry-showcase
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-telemetry}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.showcase}
+      POSTGRES_DB: ${POSTGRES_DB:-telemetry_showcase}
+      TZ: UTC
+    volumes:
+      - telemetry_showcase_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    logging: *default-logging
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod,demo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-telemetry_showcase}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-telemetry}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.showcase}
+      TELEMETRY_DEMO_SENSOR_ID: ${TELEMETRY_DEMO_SENSOR_ID:-MGD-PWR-01}
+      TELEMETRY_DEMO_LOCATION: ${TELEMETRY_DEMO_LOCATION:-Magdeburg-Nord}
+      TELEMETRY_DEMO_RETENTION_DAYS: ${TELEMETRY_DEMO_RETENTION_DAYS:-7}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=UTC -Xms64m -Xmx256m
+      TZ: UTC
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+
+  simulator:
+    build:
+      context: .
+      dockerfile: deployment/simulator.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      TELEMETRY_API_URL: http://app:8080/api/v1/telemetry
+      TELEMETRY_DEMO_SENSOR_ID: ${TELEMETRY_DEMO_SENSOR_ID:-MGD-PWR-01}
+      TELEMETRY_DEMO_LOCATION: ${TELEMETRY_DEMO_LOCATION:-Magdeburg-Nord}
+      TELEMETRY_SIMULATOR_MODE: showcase
+      TELEMETRY_SIMULATOR_INTERVAL_SECONDS: ${TELEMETRY_SIMULATOR_INTERVAL_SECONDS:-5}
+      TELEMETRY_REQUEST_TIMEOUT_SECONDS: ${TELEMETRY_REQUEST_TIMEOUT_SECONDS:-3}
+      TZ: UTC
+    logging: *default-logging
+
+  web:
+    build:
+      context: .
+      dockerfile: showcase/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TELEMETRY_HTTP_PORT:-8082}:80"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
+    logging: *default-logging
+
+volumes:
+  telemetry_showcase_postgres_data:

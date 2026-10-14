@@ -13,6 +13,9 @@ target/
 .springBeans
 .sts4-cache
 .env
+.env.showcase
+__pycache__/
+*.pyc
 
 ### IntelliJ IDEA ###
 .idea

@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${DEMO_DATABASE_URL:jdbc:postgresql://db:5432/telemetry_demo_db}
+    username: ${DEMO_DATABASE_USERNAME:user}
+    password: ${DEMO_DATABASE_PASSWORD}
+  jackson:
+    time-zone: UTC
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+telemetry:
+  demo:
+    sensor-id: ${TELEMETRY_DEMO_SENSOR_ID:MGD-PWR-01}
+    location: ${TELEMETRY_DEMO_LOCATION:Magdeburg-Nord}
+    retention-days: ${TELEMETRY_DEMO_RETENTION_DAYS:7}

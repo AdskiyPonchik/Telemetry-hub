@@ -40,6 +40,15 @@ jobs:
       - name: Build and test
         run: ./mvnw --batch-mode --no-transfer-progress clean verify
 
+      - name: Check showcase classification against shared fixtures
+        run: docker run --rm -v "$PWD:/workspace:ro" -w /workspace node:22-alpine node --test showcase/tests/*.test.mjs
+
+      - name: Test simulator
+        run: |
+          python3 -m venv /tmp/telemetry-simulator-tests
+          /tmp/telemetry-simulator-tests/bin/pip install -r requirements-simulator.txt
+          /tmp/telemetry-simulator-tests/bin/python -m unittest discover -s tests -p 'test_*.py'
+
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -73,3 +82,8 @@ jobs:
       # Check the actual Dockerfile after the test suite passes. Nothing is published.
       - name: Build image
         run: docker build --tag telemetry-service:ci .
+
+      - name: Build showcase and simulator images
+        env:
+          POSTGRES_PASSWORD: ci-build-placeholder
+        run: docker compose -f compose.showcase.yml build web simulator

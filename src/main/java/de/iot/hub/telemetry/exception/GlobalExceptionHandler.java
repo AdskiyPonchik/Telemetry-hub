@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,16 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
+                LocalDateTime.now(),
+                null);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleResourceNotFound(NoResourceFoundException ex) {
+        return new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                "Resource not found",
                 LocalDateTime.now(),
                 null);
     }

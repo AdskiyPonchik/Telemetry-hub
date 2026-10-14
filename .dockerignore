@@ -7,3 +7,9 @@
 !.mvn/**
 !src/
 !src/**
+!simulator.py
+!requirements-simulator.txt
+!deployment/
+!deployment/**
+!showcase/
+!showcase/**
