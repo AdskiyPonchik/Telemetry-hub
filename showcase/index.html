@@ -1,23 +1,193 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0e1013">
-<meta name="description" content="Telemetry Hub — an industrial telemetry engineering showcase. Explore sensor readings, threshold classification, and a local sandbox.">
-<title>Telemetry Hub · Engineering showcase</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%230e1013'/%3E%3Cpath d='M7 22h7l3-12 6 22 4-15 2 5h4' fill='none' stroke='%23bcc9d8' stroke-width='3'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="./style.css">
-<script type="module" src="./app.mjs"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0e1013">
+    <meta name="description"
+          content="Telemetry Hub — an industrial telemetry engineering showcase. Explore sensor readings, threshold classification, and a local sandbox.">
+    <title>Telemetry Hub · Engineering showcase</title>
+    <link rel="icon"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%230e1013'/%3E%3Cpath d='M7 22h7l3-12 6 22 4-15 2 5h4' fill='none' stroke='%23bcc9d8' stroke-width='3'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./style.css">
+    <script type="module" src="./app.mjs"></script>
 </head>
 <body>
 <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 <div id="preview-banner" class="preview-banner" hidden></div>
-<header class="topbar"><a class="brand" href="#"><span class="brand-icon" aria-hidden="true">⌁</span>TELEMETRY <strong>HUB</strong><span class="brand-divider"></span><span class="brand-label" data-i18n="showcase">ENGINEERING SHOWCASE</span></a><nav aria-label="Main navigation" data-i18n-aria="navigation"><a href="#monitor" data-i18n="monitor">Monitor</a><a href="#sandbox" data-i18n="sandbox">Sandbox</a><a href="#architecture" data-i18n="architecture">Architecture</a></nav><div class="languages" role="group" aria-label="Language" data-i18n-aria="language"><button type="button" data-lang="en" aria-pressed="true">EN</button><span aria-hidden="true">/</span><button type="button" data-lang="de" aria-pressed="false">DE</button></div></header>
+<header class="topbar"><a class="brand" href="#"><span class="brand-icon" aria-hidden="true">⌁</span>TELEMETRY <strong>HUB</strong><span
+        class="brand-divider"></span><span class="brand-label" data-i18n="showcase">ENGINEERING SHOWCASE</span></a>
+    <nav aria-label="Main navigation" data-i18n-aria="navigation"><a href="#monitor" data-i18n="monitor">Monitor</a><a
+            href="#sandbox" data-i18n="sandbox">Sandbox</a><a href="#architecture"
+                                                              data-i18n="architecture">Architecture</a></nav>
+    <div class="languages" role="group" aria-label="Language" data-i18n-aria="language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <span aria-hidden="true">/</span>
+        <button type="button" data-lang="de" aria-pressed="false">DE</button>
+    </div>
+</header>
 <main id="main">
-<section class="hero"><div><p class="eyebrow"><span class="tiny-cross" aria-hidden="true">+</span> <span data-i18n="heroEyebrow">INDUSTRIAL IOT / SYSTEM DEMO</span></p><h1 data-i18n-html="heroTitle">Industrial telemetry.<br><span>From signal to status.</span></h1><p class="hero-description" data-i18n="heroDescription">A Python simulator sends industrial sensor readings to Spring Boot. Follow each measurement through validation, threshold classification, and storage in PostgreSQL.</p><div class="hero-links"><a class="primary-link" href="#sandbox"><span data-i18n="tryScenario">Try a failure scenario</span><span aria-hidden="true">↗</span></a><a class="text-link" href="https://github.com/AdskiyPonchik/Telemetry-hub" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a><a class="text-link" href="https://adskiyponchik.dev" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></div></div><aside class="system-spec"><div class="spec-top"><span class="micro" data-i18n="systemProfile">SYSTEM PROFILE</span><span class="spec-mark" aria-hidden="true">TH / 01</span></div><div class="signal-diagram" aria-hidden="true"><svg viewBox="0 0 320 70"><path d="M0 37H35l7-14 9 28 14-40 17 46 15-27 12 7h54l7-9 8 18 11-29 13 39 12-19h94" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="308" cy="37" r="4" fill="currentColor"/></svg></div><dl><div><dt data-i18n="stack">Stack</dt><dd>Java 21 / Spring Boot</dd></div><div><dt data-i18n="storage">Storage</dt><dd>PostgreSQL / Flyway</dd></div><div><dt data-i18n="signals">Signals</dt><dd data-i18n="fiveSignals">5 metrics · 4 statuses</dd></div><div><dt data-i18n="interface">Interface</dt><dd>REST / JSON</dd></div></dl></aside></section>
-<section id="monitor" class="monitor-section"><div class="section-heading"><div><p class="eyebrow" data-i18n="monitorIndex">01 / OBSERVE</p><h2 data-i18n="liveMonitor">Sensor monitor</h2></div><div class="connection-wrap"><span id="connection" class="connection" role="status"></span><button id="refresh" class="icon-button" type="button" aria-label="Refresh readings" data-i18n-aria="refresh">↻</button></div></div><div class="monitor-meta"><div><span class="led" aria-hidden="true"></span><strong id="sensor-name">—</strong><span id="sensor-location">—</span><span id="current-status" class="current-status"></span></div><span id="updated"></span></div><p id="source-note" class="source-note"></p><div id="monitor-notice" class="notice" hidden role="status"></div><div id="metrics" class="metrics"></div><div class="chart-panel"><div class="panel-heading"><div><h3 data-i18n="signalHistory">Signal history</h3><p data-i18n="chartSubtitle">Select a metric above. Dots show the full reading’s status.</p></div><span class="range-label" data-i18n="last15">LAST 15 MIN</span></div><div id="chart" class="chart-container"></div><div id="chart-detail" class="chart-detail" aria-live="polite"></div><div id="status-legend" class="legend"></div></div><div class="analytics-heading"><h3 data-i18n="analyticsTitle">24-hour overview</h3><span data-i18n="analyticsNote">Aggregated in PostgreSQL</span></div><div id="analytics" class="analytics"></div><details class="readings-panel"><summary><span data-i18n="recentReadings">Recent readings</span><span class="summary-note" data-i18n="readingsCount">Latest 20 · newest first</span><span aria-hidden="true">+</span></summary><div class="table-scroll"><table><caption class="sr-only" data-i18n="tableCaption">Most recent sensor readings within the 15-minute window</caption><thead><tr><th scope="col" data-i18n="time">Time</th><th scope="col" data-i18n="voltage">Voltage</th><th scope="col" data-i18n="current">Current</th><th scope="col" data-i18n="frequency">Frequency</th><th scope="col" data-i18n="temperature">Temperature</th><th scope="col" data-i18n="vibration">Vibration</th><th scope="col" data-i18n="status">Status</th></tr></thead><tbody id="readings-body"></tbody></table></div></details></section>
-<section id="sandbox" class="sandbox-section"><div class="section-heading"><div><p class="eyebrow" data-i18n="sandboxIndex">02 / EXPERIMENT</p><h2 data-i18n="sandboxTitle">Push it past the threshold.</h2></div><span class="local-label"><span aria-hidden="true">◇</span> <span data-i18n="localOnly">LOCAL SANDBOX</span></span></div><p class="section-intro" data-i18n="sandboxIntro">Trigger a controlled scenario and follow the decision. Everything runs in this browser; no reading is sent to the service.</p><div class="sandbox-layout"><div class="scenario-picker"><span class="micro" data-i18n="chooseScenario">CHOOSE A SCENARIO</span><div id="scenarios" class="scenarios"></div><p class="sandbox-defaults" data-i18n="sandboxThresholds">Fixed demo thresholds: 198–242 V · 49–51 Hz · ≤ 80 °C · ≤ 10 a.u.. Current must be positive but has no alarm threshold.</p></div><div class="decision-panel"><div class="decision-heading"><span class="micro" data-i18n="decisionTrace">DECISION TRACE</span><span id="sandbox-http"></span></div><div class="trace-step"><span class="step-number">01</span><div><h3 data-i18n="input">Input</h3><div id="sandbox-input" class="input-values"></div></div></div><div class="trace-step"><span class="step-number">02</span><div><h3 data-i18n="rule">Rule</h3><p id="sandbox-rule"></p></div></div><div class="trace-step"><span class="step-number">03</span><div><h3 data-i18n="result">Result</h3><div id="sandbox-result" aria-live="polite"></div></div></div><div class="sandbox-history"><div><span class="micro" data-i18n="localHistory">LOCAL VALID READINGS</span><span id="sandbox-count"></span></div><div id="sandbox-chart"></div><p data-i18n="invalidExcluded">Invalid input returns a simulated 400 and never enters this chart. The live monitor is independent.</p></div></div></div></section>
-<section class="status-section"><div><p class="eyebrow" data-i18n="statusIndex">READING THE RESULT</p><h2 data-i18n="fourStatuses">Four statuses. Explicit rules.</h2><p class="section-intro" data-i18n="mechanicalNote">MECHANICAL_DAMAGE names a temperature or vibration threshold violation. It does not confirm physical damage.</p></div><div id="status-guide" class="status-guide"></div></section>
-<section id="architecture" class="architecture-section"><div class="section-heading"><div><p class="eyebrow" data-i18n="architectureIndex">03 / UNDER THE HOOD</p><h2 data-i18n="architectureTitle">A short path. Clear responsibilities.</h2></div><a class="text-link" href="https://github.com/AdskiyPonchik/Telemetry-hub" target="_blank" rel="noopener noreferrer" data-i18n="exploreSource">Explore the source ↗</a></div><div id="architecture-flow" class="architecture-flow"></div><div id="engineering-notes" class="engineering-notes"></div><div class="boundaries"><span class="micro" data-i18n="scope">SCOPE & BOUNDARIES</span><p data-i18n="scopeDescription">This showcase exposes a read-only demo snapshot. The service’s ingestion API is separate. A repeated POST creates another record; authentication, sensor ownership, and idempotency are not implemented.</p></div></section>
-</main><footer><a class="brand footer-brand" href="#">TELEMETRY <strong>HUB</strong></a><span data-i18n="footerNote">Built to make backend behavior visible.</span><a href="https://adskiyponchik.dev" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a></footer>
-</body></html>
+    <section class="hero">
+        <div><p class="eyebrow"><span class="tiny-cross" aria-hidden="true">+</span> <span data-i18n="heroEyebrow">INDUSTRIAL IOT / SYSTEM DEMO</span>
+        </p>
+            <h1 data-i18n-html="heroTitle">Industrial telemetry.<br><span>From signal to status.</span></h1>
+            <p class="hero-description" data-i18n="heroDescription">A Python simulator sends industrial sensor readings
+                to Spring Boot. Follow each measurement through validation, threshold classification, and storage in
+                PostgreSQL.</p>
+            <div class="hero-links"><a class="primary-link" href="#sandbox"><span data-i18n="tryScenario">Try a failure scenario</span><span
+                    aria-hidden="true">↗</span></a><a class="text-link"
+                                                      href="https://github.com/AdskiyPonchik/Telemetry-hub"
+                                                      target="_blank" rel="noopener noreferrer">GitHub <span
+                    aria-hidden="true">↗</span></a><a class="text-link" href="https://adskiyponchik.dev" target="_blank"
+                                                      rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a>
+            </div>
+        </div>
+        <aside class="system-spec">
+            <div class="spec-top"><span class="micro" data-i18n="systemProfile">SYSTEM PROFILE</span><span
+                    class="spec-mark" aria-hidden="true">TH / 01</span></div>
+            <div class="signal-diagram" aria-hidden="true">
+                <svg viewBox="0 0 320 70">
+                    <path d="M0 37H35l7-14 9 28 14-40 17 46 15-27 12 7h54l7-9 8 18 11-29 13 39 12-19h94" fill="none"
+                          stroke="currentColor" stroke-width="2"/>
+                    <circle cx="308" cy="37" r="4" fill="currentColor"/>
+                </svg>
+            </div>
+            <dl>
+                <div>
+                    <dt data-i18n="stack">Stack</dt>
+                    <dd>Java 21 / Spring Boot</dd>
+                </div>
+                <div>
+                    <dt data-i18n="storage">Storage</dt>
+                    <dd>PostgreSQL / Flyway</dd>
+                </div>
+                <div>
+                    <dt data-i18n="signals">Signals</dt>
+                    <dd data-i18n="fiveSignals">5 metrics · 4 statuses</dd>
+                </div>
+                <div>
+                    <dt data-i18n="interface">Interface</dt>
+                    <dd>REST / JSON</dd>
+                </div>
+            </dl>
+        </aside>
+    </section>
+    <section id="monitor" class="monitor-section">
+        <div class="section-heading">
+            <div><p class="eyebrow" data-i18n="monitorIndex">01 / OBSERVE</p>
+                <h2 data-i18n="liveMonitor">Sensor monitor</h2></div>
+            <div class="connection-wrap"><span id="connection" class="connection" role="status"></span>
+                <button id="refresh" class="icon-button" type="button" aria-label="Refresh readings"
+                        data-i18n-aria="refresh">↻
+                </button>
+            </div>
+        </div>
+        <div class="monitor-meta">
+            <div><span class="led" aria-hidden="true"></span><strong id="sensor-name">—</strong><span
+                    id="sensor-location">—</span><span id="current-status" class="current-status"></span></div>
+            <span id="updated"></span></div>
+        <p id="source-note" class="source-note"></p>
+        <div id="monitor-notice" class="notice" hidden role="status"></div>
+        <div id="metrics" class="metrics"></div>
+        <div class="chart-panel">
+            <div class="panel-heading">
+                <div><h3 data-i18n="signalHistory">Signal history</h3>
+                    <p data-i18n="chartSubtitle">Select a metric above. Dots show the full reading’s status.</p></div>
+                <span class="range-label" data-i18n="last15">LAST 15 MIN</span></div>
+            <div id="chart" class="chart-container"></div>
+            <div id="chart-detail" class="chart-detail" aria-live="polite"></div>
+            <div id="status-legend" class="legend"></div>
+        </div>
+        <div class="analytics-heading"><h3 data-i18n="analyticsTitle">24-hour overview</h3><span
+                data-i18n="analyticsNote">Aggregated in PostgreSQL</span></div>
+        <div id="analytics" class="analytics"></div>
+        <details class="readings-panel">
+            <summary><span data-i18n="recentReadings">Recent readings</span><span class="summary-note"
+                                                                                  data-i18n="readingsCount">Latest 20 · newest first</span><span
+                    aria-hidden="true">+</span></summary>
+            <div class="table-scroll">
+                <table>
+                    <caption class="sr-only" data-i18n="tableCaption">Most recent sensor readings within the 15-minute
+                        window
+                    </caption>
+                    <thead>
+                    <tr>
+                        <th scope="col" data-i18n="time">Time</th>
+                        <th scope="col" data-i18n="voltage">Voltage</th>
+                        <th scope="col" data-i18n="current">Current</th>
+                        <th scope="col" data-i18n="frequency">Frequency</th>
+                        <th scope="col" data-i18n="temperature">Temperature</th>
+                        <th scope="col" data-i18n="vibration">Vibration</th>
+                        <th scope="col" data-i18n="status">Status</th>
+                    </tr>
+                    </thead>
+                    <tbody id="readings-body"></tbody>
+                </table>
+            </div>
+        </details>
+    </section>
+    <section id="sandbox" class="sandbox-section">
+        <div class="section-heading">
+            <div><p class="eyebrow" data-i18n="sandboxIndex">02 / EXPERIMENT</p>
+                <h2 data-i18n="sandboxTitle">Push it past the threshold.</h2></div>
+            <span class="local-label"><span aria-hidden="true">◇</span> <span data-i18n="localOnly">LOCAL SANDBOX</span></span>
+        </div>
+        <p class="section-intro" data-i18n="sandboxIntro">Trigger a controlled scenario and follow the decision.
+            Everything runs in this browser; no reading is sent to the service.</p>
+        <div class="sandbox-layout">
+            <div class="scenario-picker"><span class="micro" data-i18n="chooseScenario">CHOOSE A SCENARIO</span>
+                <div id="scenarios" class="scenarios"></div>
+                <p class="sandbox-defaults" data-i18n="sandboxThresholds">Fixed demo thresholds: 198–242 V · 49–51 Hz ·
+                    ≤ 80 °C · ≤ 10 a.u.. Current must be positive but has no alarm threshold.</p></div>
+            <div class="decision-panel">
+                <div class="decision-heading"><span class="micro" data-i18n="decisionTrace">DECISION TRACE</span><span
+                        id="sandbox-http"></span></div>
+                <div class="trace-step"><span class="step-number">01</span>
+                    <div><h3 data-i18n="input">Input</h3>
+                        <div id="sandbox-input" class="input-values"></div>
+                    </div>
+                </div>
+                <div class="trace-step"><span class="step-number">02</span>
+                    <div><h3 data-i18n="rule">Rule</h3>
+                        <p id="sandbox-rule"></p></div>
+                </div>
+                <div class="trace-step"><span class="step-number">03</span>
+                    <div><h3 data-i18n="result">Result</h3>
+                        <div id="sandbox-result" aria-live="polite"></div>
+                    </div>
+                </div>
+                <div class="sandbox-history">
+                    <div><span class="micro" data-i18n="localHistory">LOCAL VALID READINGS</span><span
+                            id="sandbox-count"></span></div>
+                    <div id="sandbox-chart"></div>
+                    <p data-i18n="invalidExcluded">Invalid input returns a simulated 400 and never enters this chart.
+                        The live monitor is independent.</p></div>
+            </div>
+        </div>
+    </section>
+    <section class="status-section">
+        <div><p class="eyebrow" data-i18n="statusIndex">READING THE RESULT</p>
+            <h2 data-i18n="fourStatuses">Four statuses. Explicit rules.</h2>
+            <p class="section-intro" data-i18n="mechanicalNote">MECHANICAL_DAMAGE names a temperature or vibration
+                threshold violation. It does not confirm physical damage.</p></div>
+        <div id="status-guide" class="status-guide"></div>
+    </section>
+    <section id="architecture" class="architecture-section">
+        <div class="section-heading">
+            <div><p class="eyebrow" data-i18n="architectureIndex">03 / UNDER THE HOOD</p>
+                <h2 data-i18n="architectureTitle">A short path. Clear responsibilities.</h2></div>
+            <a class="text-link" href="https://github.com/AdskiyPonchik/Telemetry-hub" target="_blank"
+               rel="noopener noreferrer" data-i18n="exploreSource">Explore the source ↗</a></div>
+        <div id="architecture-flow" class="architecture-flow"></div>
+        <div id="engineering-notes" class="engineering-notes"></div>
+        <div class="boundaries"><span class="micro" data-i18n="scope">SCOPE & BOUNDARIES</span>
+            <p data-i18n="scopeDescription">This showcase exposes a read-only demo snapshot. The service’s ingestion API
+                is separate. A repeated POST creates another record; authentication, sensor ownership, and idempotency
+                are not implemented.</p></div>
+    </section>
+</main>
+<footer><a class="brand footer-brand" href="#">TELEMETRY <strong>HUB</strong></a><span data-i18n="footerNote">Built to make backend behavior visible.</span><a
+        href="https://adskiyponchik.dev" target="_blank" rel="noopener noreferrer" data-i18n="portfolio">Portfolio ↗</a>
+</footer>
+</body>
+</html>

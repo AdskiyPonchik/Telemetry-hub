@@ -61,6 +61,115 @@ simulator.py ──POST──▶ TelemetryController ──▶ TelemetryService 
 
 Classic layered design: `controller → service → repository`, DTOs decoupled from JPA entities, centralized error handling via `@RestControllerAdvice` (`GlobalExceptionHandler`).
 
+### Showcase containers and addresses
+
+This diagram describes **[compose.showcase.yml](compose.showcase.yml)** with default
+ports. It runs four containers on one Compose network. The browser runs outside
+that network; only Nginx has a published host port.
+
+```mermaid
+flowchart LR
+    subgraph host["HOST MACHINE — computer or Raspberry Pi"]
+        browser(["BROWSER PROCESS<br/>http://127.0.0.1:8082"])
+        port{{"PORT MAPPING<br/>127.0.0.1:8082 → web:80"}}
+
+        subgraph network["DOCKER NETWORK — telemetry-showcase_default"]
+            web["CONTAINER 1 · web<br/>Nginx · web:80"]
+            app["CONTAINER 2 · app<br/>Spring Boot · app:8080"]
+            simulator["CONTAINER 3 · simulator<br/>Python client · no listening port"]
+            db["CONTAINER 4 · db<br/>PostgreSQL · db:5432"]
+        end
+
+        volume[("STORAGE VOLUME<br/>Persistent PostgreSQL files")]
+        browser <-->|"GET assets or snapshot<br/>Files or JSON response"| port
+        port <--> web
+        web <-->|"GET /api/v1/demo/snapshot<br/>JSON; cached for up to 5s"| app
+        simulator <-->|"POST /api/v1/telemetry<br/>201 Created on success"| app
+        app <-->|"JDBC / SQL<br/>Read and write"| db
+        db --- volume
+    end
+
+    classDef container fill:#e0f2fe,stroke:#0369a1,stroke-width:3px,color:#0c4a6e;
+    classDef auxiliary fill:#f1f5f9,stroke:#64748b,color:#0f172a;
+    class web,app,simulator,db container;
+    class browser,port,volume auxiliary;
+    style host fill:none,stroke:#64748b,stroke-width:2px
+    style network fill:none,stroke:#64748b,stroke-width:2px,stroke-dasharray:6 4
+```
+
+**Legend:** only the four blue rectangles labelled **CONTAINER 1–4** are
+containers. They are peers; none contains another. The solid outer frame is the
+host machine; the dashed frame is their shared network. The grey rounded box,
+hexagon and cylinder represent the browser, port mapping and storage, respectively.
+Container numbers identify the boxes; they do not indicate startup order.
+
+The browser downloads JavaScript from Nginx and **executes it in the browser**.
+`refresh()` requests `/api/v1/demo/snapshot` from the same origin as the page.
+Nginx forwards that request to Java or returns a cached response. The simulator
+writes directly to Java inside the network; browser sandbox buttons never POST
+to the backend.
+
+| Caller | Address it uses | Destination / result |
+| --- | --- | --- |
+| Browser on the host | `http://127.0.0.1:8082/` | Nginx returns the page and its static assets |
+| Browser JavaScript | `/api/v1/demo/snapshot` | Same host and port as the page; Nginx returns snapshot JSON |
+| Nginx container | `http://app:8080/api/v1/demo/snapshot` | Java's `DemoController` → `DemoSnapshotService` |
+| Simulator container | `http://app:8080/api/v1/telemetry` | Java's ingestion endpoint |
+| Java container | `jdbc:postgresql://db:5432/telemetry_showcase` | PostgreSQL; database name can be overridden |
+
+**How to read the addresses:**
+
+- `web`, `app` and `db` are Compose service names resolved by Docker's internal
+  DNS. They are not public domain names, and container IP addresses need not be
+  hardcoded. The network name above assumes the default project name.
+- `localhost` / `127.0.0.1` refers to the machine or container making the request.
+  Inside `web`, `localhost:8080` would refer to `web` itself, so Nginx uses
+  `app:8080` to reach Java. A host browser uses the published port instead.
+- `127.0.0.1:8082:80` means **host address : host port : container port**.
+  `TELEMETRY_HTTP_PORT` can change `8082`; Nginx still listens on port `80` inside
+  its container. Binding to loopback does not expose this port directly to the LAN.
+- Java and PostgreSQL have no published host ports in this Compose file.
+  `expose: 8080` documents Java's internal port; it does not publish it to the host
+  or act as an access-control rule between containers.
+
+See Docker's [Compose networking guide](https://docs.docker.com/compose/how-tos/networking/)
+for service-name discovery and the distinction between host and container ports.
+
+Nginx's configuration lives in [deployment/nginx.conf](deployment/nginx.conf).
+The [web Dockerfile](showcase/Dockerfile) copies it to
+`/etc/nginx/conf.d/default.conf` and places the site files in
+`/usr/share/nginx/html/` inside the image.
+
+| Request through the showcase Nginx | Behavior |
+| --- | --- |
+| `GET /` or an existing static asset | Serve the site file |
+| `GET /api/v1/demo/snapshot` | Proxy to Java or serve a fresh cached response |
+| Snapshot URL with a nonempty query string | `400 Bad Request` |
+| `POST /api/v1/demo/snapshot` | `403 Forbidden` |
+| Other `/api` paths, `/actuator`, `/swagger-ui`, `/v3/api-docs` | `404 Not Found`; not forwarded to Java |
+
+`HEAD` is also allowed for the snapshot. These restrictions apply at the Nginx
+entry point; the simulator can still reach Java's POST endpoint internally.
+An optional Cloudflare Tunnel can connect public HTTPS traffic to the host's
+loopback entry point. It is not one of these four Compose services; this diagram
+does not assert that a public tunnel is running. See the
+[deployment guide](docs/showcase-deployment.md) for tunnel placement options.
+
+### Keep development and showcase addresses separate
+
+The root [docker-compose.yml](docker-compose.yml) is a **different environment**:
+
+| Launch mode | Browser / host addresses | Java → PostgreSQL |
+| --- | --- | --- |
+| Showcase: `compose.showcase.yml` | Nginx at `127.0.0.1:8082`; no published Java or DB port | `db:5432` |
+| Development: `docker-compose.yml`, all services | Java at `localhost:8080`, PostgreSQL at `localhost:5433`, Grafana at `localhost:3000` | `db:5432` |
+| Development: only `db` in Docker, Java via Maven on the host | Java at `localhost:8080`, PostgreSQL at `localhost:5433` | `localhost:5433` |
+
+The development Compose has no Nginx or simulator container. Grafana is present
+there, but this repository does not provision its PostgreSQL data source or
+dashboards. Its presence does not mean it powers the showcase chart: that chart
+is SVG rendered by the browser's JavaScript.
+
 ## 🔌 API
 
 | Method | Endpoint                        | Description                                        |
