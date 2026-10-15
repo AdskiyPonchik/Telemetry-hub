@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,5 +69,18 @@ public class GlobalExceptionHandler {
                 "An internal server error occurred",
                 LocalDateTime.now(),
                 null);
+    }
+
+    @ExceptionHandler(TemperatureAlertNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleTemperatureAlertNotFound(
+            TemperatureAlertNotFoundException ex
+    ) {
+        return new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                LocalDateTime.now(),
+                null
+        );
     }
 }
