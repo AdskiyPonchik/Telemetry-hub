@@ -16,7 +16,7 @@
 	<url>https://github.com/AdskiyPonchik/Telemetry-hub</url>
 	<properties>
 		<java.version>21</java.version>
-		<springdoc.version>3.0.3</springdoc.version>
+		<springdoc.version>3.2.0</springdoc.version>
 		<!-- JaCoCo fills this before Surefire starts; keep it defined when coverage is skipped. -->
 		<argLine/>
 	</properties>
