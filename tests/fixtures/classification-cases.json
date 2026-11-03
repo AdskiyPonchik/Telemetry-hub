@@ -11,6 +11,7 @@
     {
       "name": "normal",
       "input": {
+        "eventId": "2444b59f-4581-50a0-9e03-149492d040d1",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -25,6 +26,7 @@
     {
       "name": "inclusive-lower-electrical-boundary",
       "input": {
+        "eventId": "0901b9af-a732-5e27-92ed-2584d8ec0879",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 198.0,
@@ -39,6 +41,7 @@
     {
       "name": "inclusive-upper-boundaries",
       "input": {
+        "eventId": "d5545c3a-f7d7-5ec7-9954-68d074ae46e2",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 242.0,
@@ -53,6 +56,7 @@
     {
       "name": "voltage-below",
       "input": {
+        "eventId": "1d040231-1576-5563-94cd-090951cf7e5d",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 197.99,
@@ -67,6 +71,7 @@
     {
       "name": "voltage-above",
       "input": {
+        "eventId": "032e1dd5-7f03-5f21-ad17-892654945aa6",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 242.01,
@@ -81,6 +86,7 @@
     {
       "name": "frequency-below",
       "input": {
+        "eventId": "cc53133e-53a2-55df-bb33-52ee51a65d4e",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -95,6 +101,7 @@
     {
       "name": "frequency-above",
       "input": {
+        "eventId": "0b3cb5da-c12e-58dc-b94d-91ce75266b81",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -109,6 +116,7 @@
     {
       "name": "overheating",
       "input": {
+        "eventId": "f06d847e-76c2-585d-ae60-8c00bd7dc497",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -123,6 +131,7 @@
     {
       "name": "vibration",
       "input": {
+        "eventId": "45bbc940-3627-5bcd-a65b-8b74d595f587",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -137,6 +146,7 @@
     {
       "name": "combined",
       "input": {
+        "eventId": "77c3d042-0740-5226-b545-58af9ff22fa8",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 260.0,
@@ -151,6 +161,7 @@
     {
       "name": "current-has-no-alarm-threshold",
       "input": {
+        "eventId": "0b7a0c23-2193-58ca-b127-6f9357457147",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -165,6 +176,7 @@
     {
       "name": "negative-temperature-valid",
       "input": {
+        "eventId": "1dcda749-0aef-5132-8a71-7b7c3acefd43",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -179,6 +191,7 @@
     {
       "name": "zero-vibration-valid",
       "input": {
+        "eventId": "29817773-bf11-57ba-b05f-860d1afa95c2",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -193,6 +206,7 @@
     {
       "name": "optional-location",
       "input": {
+        "eventId": "d2de385a-e0e2-5b6b-8490-a6a03f452db7",
         "sensorId": "MGD-PWR-01",
         "location": null,
         "voltage": 230.0,
@@ -207,6 +221,7 @@
     {
       "name": "zero-voltage",
       "input": {
+        "eventId": "7ee9c778-25dd-534b-a80e-3243b0b7b1d9",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 0.0,
@@ -221,6 +236,7 @@
     {
       "name": "negative-voltage",
       "input": {
+        "eventId": "a2363f93-677c-561a-9e81-a29806317af7",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": -1.0,
@@ -235,6 +251,7 @@
     {
       "name": "zero-current",
       "input": {
+        "eventId": "513d8059-0338-52bf-887d-cbe06c447195",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -249,6 +266,7 @@
     {
       "name": "negative-frequency",
       "input": {
+        "eventId": "4733f5ef-0d1e-508b-b80f-674152d2ec1e",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -263,6 +281,7 @@
     {
       "name": "negative-vibration",
       "input": {
+        "eventId": "918cca00-4b70-56eb-ba13-5b0d8363f7cd",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -277,6 +296,7 @@
     {
       "name": "blank-sensor",
       "input": {
+        "eventId": "d2f76cd3-38da-5ec7-a1a6-1b54c14ae2af",
         "sensorId": "  ",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -291,6 +311,7 @@
     {
       "name": "missing-temperature",
       "input": {
+        "eventId": "58044d6d-8f1e-5dcd-96f9-82c1448aaa54",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -305,6 +326,7 @@
     {
       "name": "missing-frequency",
       "input": {
+        "eventId": "e4b4ddfe-65bb-5599-8fb1-d51060de972f",
         "sensorId": "MGD-PWR-01",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -319,6 +341,7 @@
     {
       "name": "sensor-too-long",
       "input": {
+        "eventId": "ce97b14c-6f99-5e64-beab-056d109f50d8",
         "sensorId": "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
         "location": "Magdeburg-Nord",
         "voltage": 230.0,
@@ -333,8 +356,38 @@
     {
       "name": "location-too-long",
       "input": {
+        "eventId": "079aae9a-c0c4-5563-9b92-d944cd52b05b",
         "sensorId": "MGD-PWR-01",
         "location": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+        "voltage": 230.0,
+        "current": 5.0,
+        "frequency": 50.0,
+        "temperature": 35.0,
+        "vibration": 3.0
+      },
+      "httpStatus": 400,
+      "status": null
+    },
+    {
+      "name": "missing-event-id",
+      "input": {
+        "sensorId": "MGD-PWR-01",
+        "location": "Magdeburg-Nord",
+        "voltage": 230.0,
+        "current": 5.0,
+        "frequency": 50.0,
+        "temperature": 35.0,
+        "vibration": 3.0
+      },
+      "httpStatus": 400,
+      "status": null
+    },
+    {
+      "name": "null-event-id",
+      "input": {
+        "eventId": null,
+        "sensorId": "MGD-PWR-01",
+        "location": "Magdeburg-Nord",
         "voltage": 230.0,
         "current": 5.0,
         "frequency": 50.0,

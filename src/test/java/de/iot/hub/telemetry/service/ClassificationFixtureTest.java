@@ -7,6 +7,8 @@ import de.iot.hub.telemetry.model.TemperatureAlertState;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
+import de.iot.hub.telemetry.repository.TemperatureIncidentRepository;
+import java.time.Clock;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -45,8 +47,15 @@ class ClassificationFixtureTest {
             state.setSensorId(invocation.getArgument(0));
             return Optional.of(state);
         });
+        TemperatureIncidentRepository incidentRepository = mock(TemperatureIncidentRepository.class);
+        when(telemetryRepository.saveAndFlush(org.mockito.ArgumentMatchers.any(Telemetry.class)))
+                .thenAnswer(invocation -> {
+                    Telemetry telemetry = invocation.getArgument(0);
+                    telemetry.setId(1L);
+                    return telemetry;
+                });
         TelemetryService service = new TelemetryService(telemetryRepository, properties, thresholdRepository,
-                new TemperatureAlertEvaluator(), stateRepository);
+                new TemperatureAlertEvaluator(), stateRepository, incidentRepository, Clock.systemUTC());
 
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
@@ -67,7 +76,7 @@ class ClassificationFixtureTest {
                 service.processTelemetry(fixtureCase.input());
 
                 ArgumentCaptor<Telemetry> telemetryCaptor = ArgumentCaptor.forClass(Telemetry.class);
-                verify(telemetryRepository).save(telemetryCaptor.capture());
+                verify(telemetryRepository).saveAndFlush(telemetryCaptor.capture());
                 assertEquals(
                         fixtureCase.status(),
                         telemetryCaptor.getValue().getStatus().name(),

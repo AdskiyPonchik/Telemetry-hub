@@ -13,7 +13,7 @@ Receives readings from power-grid sensors (voltage, current, frequency, temperat
 
 The English/German showcase in `showcase/` makes the complete sensor-to-database
 path visible: a live chart, effective thresholds, four classification states,
-recent readings, and PostgreSQL aggregates. A separate browser-only sandbox lets
+recent readings, PostgreSQL aggregates, and persisted temperature incidents with recovery progress and history. A separate browser-only sandbox lets
 visitors explore faults, threshold boundaries, and rejected input without changing
 the shared live stream. Measurements are synthetic; live processing and storage
 use the real service.
@@ -39,8 +39,9 @@ deployment checks before treating it as live.
 
 ## ✨ Features
 
-- 📥 **Telemetry ingestion** — validated `POST` endpoint (Jakarta Bean Validation) for sensor readings
+- 📥 **Telemetry ingestion** — validated UUID-identified events; safe retries return the original receipt, conflicting content returns `409`
 - 🚨 **Anomaly detection** — every reading is classified as `OK`, `ALARM`, `MECHANICAL_DAMAGE` or both, based on configurable voltage/frequency corridors and per-sensor temperature/vibration thresholds
+- 🌡️ **Temperature incidents** — three consecutive unique hot readings open one incident; three normal readings recover it. Acknowledgement is independent and history is persisted.
 - 📊 **Analytics API** — per-sensor aggregates over a sliding time window (reading count, alarm count, average voltage & frequency)
 - ⚙️ **Externalized configuration** — all limits (`198–242 V`, `49–51 Hz`, max temperature/vibration, analytics window) live in `application.yaml` via `@ConfigurationProperties`
 - 🧩 **Per-sensor thresholds** — override defaults for individual sensors, stored in the database
@@ -174,9 +175,13 @@ is SVG rendered by the browser's JavaScript.
 
 | Method | Endpoint                        | Description                                        |
 |--------|---------------------------------|----------------------------------------------------|
-| `POST` | `/api/v1/telemetry`             | Ingest a sensor reading → `201 Created`            |
+| `POST` | `/api/v1/telemetry`             | New event → `201`; identical retry → `200`; conflicting content → `409` |
 | `GET`  | `/api/v1/telemetry`             | Paginated list of stored telemetry (`Pageable`)    |
 | `GET`  | `/api/v1/analytics/{sensorId}`  | Aggregated stats for a sensor (24h window default) |
+| `GET` | `/api/v1/temperature-alerts/{sensorID}` | Current breach/recovery counters and active incident flag |
+| `GET` | `/api/v1/temperature-incidents?sensorId=...&page=0&size=20` | Incident history, newest ID first; size 1–100 |
+| `GET` | `/api/v1/temperature-incidents/{id}` | Incident details; unknown ID → `404` |
+| `PUT` | `/api/v1/temperature-incidents/{id}/acknowledgement` | Idempotent acknowledgement, including after recovery |
 
 **Example request:**
 
@@ -184,6 +189,7 @@ is SVG rendered by the browser's JavaScript.
 curl -X POST http://localhost:8080/api/v1/telemetry \
   -H "Content-Type: application/json" \
   -d '{
+    "eventId": "c365ff02-114a-4e72-947b-d4ef8f2729a0",
     "sensorId": "MGD-PWR-01",
     "location": "Magdeburg-Nord",
     "voltage": 231.4,
@@ -193,6 +199,20 @@ curl -X POST http://localhost:8080/api/v1/telemetry \
     "vibration": 3.2
   }'
 ```
+
+`eventId` is required and must be a UUID generated once per measurement. Repeating
+that request returns the same receipt (`id`, `eventId`, `sensorId`, `status`,
+`timestamp`) without changing readings, analytics or incident state. Changed input
+for the same `(sensorId, eventId)` returns `409`; another sensor can use that UUID.
+Duplicate protection lasts only while the reading is retained. Existing stored
+readings remain readable, but old clients must add `eventId` to new requests.
+
+See [incident lifecycle and local acceptance scenario](docs/temperature-incidents.md)
+for recovery, acknowledgement, migration boundaries and executable HTTP checks.
+The [release design walkthrough (RU)](docs/release-design-notes.ru.md) explains
+the request flow, transaction/locking choices, migrations and remaining tradeoffs.
+The showcase exposes this history through its read-only snapshot; operator writes
+remain on the internal application API and do not record an authenticated identity.
 
 **Example analytics response:**
 

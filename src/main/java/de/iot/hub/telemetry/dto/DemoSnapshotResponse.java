@@ -9,7 +9,10 @@ public record DemoSnapshotResponse(
         Instant generatedAt,
         DemoReadingResponse latest,
         List<DemoReadingResponse> readings,
-        AnalyticsResponse analytics) {
+        AnalyticsResponse analytics,
+        TemperatureAlertResponse temperatureAlert,
+        TemperatureIncidentResponse activeIncident,
+        List<TemperatureIncidentResponse> recentIncidents) {
 
     public record Sensor(String id, String location) {
     }

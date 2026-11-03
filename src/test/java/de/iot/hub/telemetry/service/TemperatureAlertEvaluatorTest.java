@@ -35,4 +35,46 @@ class TemperatureAlertEvaluatorTest {
     void alertRequiresAtLeastThreeBreaches(int count, boolean active) {
         assertEquals(active, evaluator.isAlertActive(count));
     }
+
+    @Test
+    void lifecycleRequiresThreeUninterruptedBreachesToOpenAndThreeNormalReadingsToRecover() {
+        double[] temperatures = {81, 80, 82, 83, 84, 85, 80, 79, 81, 80, 79, 78, 81, 82, 83};
+        int[] expectedBreaches = {1, 0, 1, 2, 3, 3, 0, 0, 1, 0, 0, 0, 1, 2, 3};
+        int[] expectedNormal = {0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 2, 0, 0, 0, 0};
+        int breaches = 0;
+        int normal = 0;
+        boolean active = false;
+
+        for (int i = 0; i < temperatures.length; i++) {
+            var result = evaluator.evaluateLifecycle(temperatures[i], 80, breaches, normal, active);
+            assertEquals(expectedBreaches[i], result.consecutiveBreaches(), "breaches at reading " + i);
+            assertEquals(expectedNormal[i], result.consecutiveNormalReadings(), "normal at reading " + i);
+            assertEquals(i == 4 || i == 14, result.openIncident(), "open at reading " + i);
+            assertEquals(i == 11, result.recoverIncident(), "recover at reading " + i);
+            if (result.openIncident()) active = true;
+            if (result.recoverIncident()) active = false;
+            breaches = result.consecutiveBreaches();
+            normal = result.consecutiveNormalReadings();
+        }
+    }
+
+    @Test
+    void activeIncidentDoesNotReopenDuringSustainedOverheating() {
+        var result = evaluator.evaluateLifecycle(81, 80, Integer.MAX_VALUE, 2, true);
+
+        assertEquals(3, result.consecutiveBreaches());
+        assertEquals(0, result.consecutiveNormalReadings());
+        assertEquals(false, result.openIncident());
+        assertEquals(false, result.recoverIncident());
+    }
+
+    @Test
+    void thresholdEqualityRecoversAndResetsCountersWithoutOverflow() {
+        var result = evaluator.evaluateLifecycle(80, 80, 3, Integer.MAX_VALUE, true);
+
+        assertEquals(0, result.consecutiveBreaches());
+        assertEquals(0, result.consecutiveNormalReadings());
+        assertEquals(false, result.openIncident());
+        assertEquals(true, result.recoverIncident());
+    }
 }

@@ -3,6 +3,8 @@ package de.iot.hub.telemetry.controller;
 import de.iot.hub.telemetry.dto.AnalyticsResponse;
 import de.iot.hub.telemetry.dto.DemoReadingResponse;
 import de.iot.hub.telemetry.dto.DemoSnapshotResponse;
+import de.iot.hub.telemetry.dto.TemperatureAlertResponse;
+import de.iot.hub.telemetry.dto.TemperatureIncidentResponse;
 import de.iot.hub.telemetry.exception.GlobalExceptionHandler;
 import de.iot.hub.telemetry.model.TelemetryStatus;
 import de.iot.hub.telemetry.service.DemoSnapshotService;
@@ -48,7 +50,12 @@ class DemoControllerTest {
                 Instant.parse("2026-10-13T10:01:00Z"),
                 reading,
                 List.of(reading),
-                new AnalyticsResponse("MGD-PWR-01", 1, 0, 230, 50));
+                new AnalyticsResponse("MGD-PWR-01", 1, 0, 230, 50),
+                new TemperatureAlertResponse("MGD-PWR-01", 0, true, 2),
+                new TemperatureIncidentResponse(9L, "MGD-PWR-01", Instant.parse("2026-10-13T09:59:00Z"),
+                        null, null, 80.0, 85.0, false, true),
+                List.of(new TemperatureIncidentResponse(8L, "MGD-PWR-01", null,
+                        null, Instant.parse("2026-10-13T09:50:00Z"), null, null, true, false)));
         when(service.getSnapshot()).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/demo/snapshot"))
@@ -59,7 +66,14 @@ class DemoControllerTest {
                 .andExpect(jsonPath("$.generatedAt").value("2026-10-13T10:01:00Z"))
                 .andExpect(jsonPath("$.latest.timestamp").value("2026-10-13T10:00:00Z"))
                 .andExpect(jsonPath("$.readings[0].id").value(7))
-                .andExpect(jsonPath("$.analytics.alarmCount").value(0));
+                .andExpect(jsonPath("$.analytics.alarmCount").value(0))
+                .andExpect(jsonPath("$.temperatureAlert.sensorID").value("MGD-PWR-01"))
+                .andExpect(jsonPath("$.temperatureAlert.alertActive").value(true))
+                .andExpect(jsonPath("$.temperatureAlert.consecutiveNormalReadings").value(2))
+                .andExpect(jsonPath("$.activeIncident.id").value(9))
+                .andExpect(jsonPath("$.activeIncident.openedAt").value("2026-10-13T09:59:00Z"))
+                .andExpect(jsonPath("$.recentIncidents[0].recoveredAt").value("2026-10-13T09:50:00Z"))
+                .andExpect(jsonPath("$.recentIncidents[0].migrated").value(true));
     }
 
     @Test

@@ -1,11 +1,9 @@
 package de.iot.hub.telemetry.config;
 
 import jakarta.annotation.PostConstruct;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -14,11 +12,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @Profile("demo")
 public class DemoConfiguration {
-
-    @Bean
-    Clock demoClock() {
-        return Clock.systemUTC();
-    }
 
     @PostConstruct
     void requireUtcJvmTimeZone() {

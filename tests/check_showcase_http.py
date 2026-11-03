@@ -25,25 +25,39 @@ def check(base):
     code, body, headers = request(base, "/api/v1/demo/snapshot")
     assert code == 200, ("snapshot", code, body[:200])
     snapshot = json.loads(body)
-    assert {"sensor", "thresholds", "generatedAt", "latest", "readings", "analytics"} <= snapshot.keys()
+    assert {"sensor", "thresholds", "generatedAt", "latest", "readings", "analytics",
+            "temperatureAlert", "activeIncident", "recentIncidents"} <= snapshot.keys()
     assert snapshot["generatedAt"].endswith(("Z", "+00:00"))
     readings = snapshot["readings"]
     assert len(readings) <= 180
     assert readings == sorted(readings, key=lambda r: (r["timestamp"], r["id"]))
     assert all(r["sensorId"] == snapshot["sensor"]["id"] for r in readings)
     assert all(r["timestamp"].endswith(("Z", "+00:00")) for r in readings)
+    recent = snapshot["recentIncidents"]
+    assert len(recent) <= 5
+    assert recent == sorted(recent, key=lambda item: item["id"], reverse=True)
+    assert all(not item["active"] and item["recoveredAt"] and
+               item["sensorId"] == snapshot["sensor"]["id"] for item in recent)
+    active = snapshot["activeIncident"]
+    if active:
+        assert active["active"] and active["recoveredAt"] is None
+        assert active["sensorId"] == snapshot["sensor"]["id"]
     assert "json" in headers.get("Content-Type", "")
     code, _, headers = request(base, "/app.mjs")
     assert code == 200 and "javascript" in headers.get("Content-Type", ""), "module MIME type"
     code, _, _ = request(base, "/api/v1/demo/snapshot?size=100000")
     assert code == 400, ("snapshot query parameters must be rejected", code)
     for path in ["/api/v1/telemetry", "/api/v1/analytics/MGD-PWR-01",
+                 "/api/v1/temperature-alerts/MGD-PWR-01",
+                 "/api/v1/temperature-incidents?sensorId=MGD-PWR-01",
                  "/actuator/health", "/v3/api-docs", "/swagger-ui/index.html"]:
         code, _, _ = request(base, path)
         assert code in (403, 404), ("private route exposed", path, code)
     for path in ["/api/v1/telemetry", "/api/v1/demo/snapshot"]:
         code, _, _ = request(base, path, "POST", b"{}")
         assert code in (403, 404, 405), ("write route exposed", path, code)
+    code, _, _ = request(base, "/api/v1/temperature-incidents/1/acknowledgement", "PUT", b"{}")
+    assert code in (403, 404, 405), ("acknowledgement exposed", code)
     print(f"PASS: public page, bounded UTC snapshot ({len(readings)} points), private routes and writes blocked")
 
 

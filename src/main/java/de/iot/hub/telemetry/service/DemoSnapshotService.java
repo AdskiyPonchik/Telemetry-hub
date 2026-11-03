@@ -5,10 +5,13 @@ import de.iot.hub.telemetry.config.TelemetryProperties;
 import de.iot.hub.telemetry.dto.AnalyticsResponse;
 import de.iot.hub.telemetry.dto.DemoReadingResponse;
 import de.iot.hub.telemetry.dto.DemoSnapshotResponse;
+import de.iot.hub.telemetry.dto.TemperatureAlertResponse;
 import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
+import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
+import de.iot.hub.telemetry.repository.TemperatureIncidentRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -36,6 +39,8 @@ public class DemoSnapshotService {
     private final TelemetryProperties telemetryProperties;
     private final DemoProperties demoProperties;
     private final Clock clock;
+    private final TemperatureAlertStateRepository stateRepository;
+    private final TemperatureIncidentRepository incidentRepository;
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public DemoSnapshotResponse getSnapshot() {
@@ -68,6 +73,15 @@ public class DemoSnapshotService {
                 sensorId,
                 nowUtc.minusHours(telemetryProperties.getAnalytics().getWindowHours()));
 
+        var activeIncident = incidentRepository.findBySensorIdAndRecoveredAtIsNull(sensorId)
+                .map(TemperatureIncidentService::toResponse).orElse(null);
+        var temperatureAlert = stateRepository.findById(sensorId)
+                .map(state -> new TemperatureAlertResponse(state.getSensorId(), state.getConsecutiveBreaches(),
+                        activeIncident != null, state.getConsecutiveNormalReadings())).orElse(null);
+        var recentIncidents = incidentRepository
+                .findTop5BySensorIdAndRecoveredAtIsNotNullOrderByIdDesc(sensorId).stream()
+                .map(TemperatureIncidentService::toResponse).toList();
+
         return new DemoSnapshotResponse(
                 new DemoSnapshotResponse.Sensor(sensorId, demoProperties.getLocation()),
                 new DemoSnapshotResponse.Thresholds(
@@ -80,7 +94,10 @@ public class DemoSnapshotService {
                 generatedAt,
                 latest,
                 readings,
-                analytics);
+                analytics,
+                temperatureAlert,
+                activeIncident,
+                recentIncidents);
     }
 
     private DemoReadingResponse toDemoReading(Telemetry telemetry) {

@@ -21,4 +21,7 @@ public class TemperatureAlertState {
 
     @Column(name = "consecutive_breaches", nullable = false)
     private int consecutiveBreaches;
+
+    @Column(name = "consecutive_normal_readings", nullable = false)
+    private int consecutiveNormalReadings;
 }

@@ -60,6 +60,26 @@ public class GlobalExceptionHandler {
                 null);
     }
 
+    @ExceptionHandler(TelemetryEventConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleEventConflict(TelemetryEventConflictException ex) {
+        return new ErrorResponse(409, ex.getMessage(), LocalDateTime.now(), null);
+    }
+
+    @ExceptionHandler(TemperatureIncidentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleIncidentNotFound(TemperatureIncidentNotFoundException ex) {
+        return new ErrorResponse(404, ex.getMessage(), LocalDateTime.now(), null);
+    }
+
+    @ExceptionHandler({InvalidIncidentPageException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidParameters(Exception ex) {
+        return new ErrorResponse(400, ex.getMessage(), LocalDateTime.now(), null);
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleAllUncaughtExceptions(Exception ex) {

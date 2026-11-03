@@ -20,7 +20,7 @@ public class TemperatureAlertController {
 
     @GetMapping("/{sensorID}")
     @Operation(summary = "Get temperature alert state for a sensor",
-            description = "Returns the consecutive breach cound and alert flag; "
+            description = "Returns breach and recovery counts and the persistent active-incident flag; "
                     + "404 if no state exists")
     public TemperatureAlertResponse getState(@PathVariable String sensorID) {
         return service.getState(sensorID);

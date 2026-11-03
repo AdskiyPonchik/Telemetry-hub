@@ -12,7 +12,7 @@ public class OpenApiConfig {
     public OpenAPI telemetryOpenApi() {
         return new OpenAPI().info(new Info()
                 .title("Telemetry Hub API")
-                .description("Industrial IoT telemetry ingestion, threshold-based status evaluation and analytics")
+                .description("Industrial IoT telemetry ingestion with per-sensor event UUID deduplication, threshold-based status evaluation, persistent temperature incidents and analytics")
                 .version("v1"));
     }
 }

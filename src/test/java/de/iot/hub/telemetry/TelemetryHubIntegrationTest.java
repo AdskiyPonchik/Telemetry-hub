@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -31,6 +32,7 @@ class TelemetryHubIntegrationTest {
 
     private Map<String, Object> reading(String sensorId, double voltage) {
         return Map.of(
+                "eventId", UUID.randomUUID().toString(),
                 "sensorId", sensorId,
                 "location", "Integration-Test",
                 "voltage", voltage,

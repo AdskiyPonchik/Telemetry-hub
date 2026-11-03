@@ -9,6 +9,7 @@ import random
 import time
 from typing import Callable, Mapping
 from urllib.parse import urlparse
+from uuid import uuid4
 
 import requests
 
@@ -99,6 +100,7 @@ def _reading(
     rng=random,
 ) -> dict[str, float | str]:
     return {
+        "eventId": str(uuid4()),
         "sensorId": sensor_id,
         "location": location,
         "voltage": round(voltage, 2),
@@ -171,29 +173,49 @@ def submit_reading(
     config: SimulatorConfig,
     data: Mapping[str, float | str],
     post: Callable[..., requests.Response] = requests.post,
+    sleep: Callable[[float], None] = time.sleep,
 ) -> bool:
-    """Submit once. A failed observation is not retried because POST is not idempotent."""
-    try:
-        response = post(
-            config.api_url,
-            json=dict(data),
-            timeout=config.request_timeout_seconds,
-        )
-    except requests.RequestException as exc:
-        print(f"send failed: {exc}")
-        return False
+    """Retry transient failures with the same event identity, at most three times.
 
-    if response.status_code == 201:
-        print(
-            "accepted: "
-            f"voltage={data['voltage']}V temperature={data['temperature']}C "
-            f"vibration={data['vibration']}"
-        )
-        return True
+    There is no persistent queue: a final failure loses this observation locally.
+    A timeout can still mean that the service stored it before the response was lost.
+    """
+    payload = dict(data)
+    for attempt in range(1, 4):
+        try:
+            response = post(
+                config.api_url,
+                json=payload,
+                timeout=config.request_timeout_seconds,
+            )
+        except requests.RequestException as exc:
+            reason = f"send failed: {exc}"
+        else:
+            if response.status_code in {200, 201}:
+                receipt = "created" if response.status_code == 201 else "duplicate receipt"
+                print(
+                    f"accepted: {receipt} eventId={payload['eventId']} "
+                    f"voltage={payload['voltage']}V temperature={payload['temperature']}C "
+                    f"vibration={payload['vibration']}"
+                )
+                return True
 
-    message = response.text.strip().replace("\n", " ")[:160]
-    suffix = f" - {message}" if message else ""
-    print(f"rejected: HTTP {response.status_code}{suffix}")
+            message = response.text.strip().replace("\n", " ")[:160]
+            suffix = f" - {message}" if message else ""
+            reason = f"rejected: HTTP {response.status_code}{suffix}"
+            if not 500 <= response.status_code <= 599:
+                print(f"{reason}; observation not queued for retry")
+                return False
+
+        if attempt < 3:
+            delay = 0.5 * attempt
+            print(f"{reason}; retry {attempt + 1}/3 in {delay:g}s")
+            sleep(delay)
+        else:
+            print(
+                f"{reason}; attempts exhausted, observation discarded locally "
+                "(delivery unconfirmed; no persistent queue)"
+            )
     return False
 
 

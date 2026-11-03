@@ -6,6 +6,7 @@ import de.iot.hub.telemetry.model.TemperatureAlertState;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
+import de.iot.hub.telemetry.repository.TemperatureIncidentRepository;
 import de.iot.hub.telemetry.service.TelemetryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +45,9 @@ class TemperatureAlertPersistenceTest {
 
     @Autowired
     private TelemetryRepository telemetryRepository;
+
+    @Autowired
+    private TemperatureIncidentRepository incidentRepository;
 
     @Test
     void counterIsPersistedCappedAtThreeAndResetAtExactThreshold() {
@@ -134,6 +139,7 @@ class TemperatureAlertPersistenceTest {
 
         assertFalse(alertStateRepository.existsById(sensorId));
         assertTrue(readingsFor(sensorId).isEmpty());
+        assertFalse(incidentRepository.existsBySensorIdAndRecoveredAtIsNull(sensorId));
     }
 
     @Test
@@ -152,6 +158,7 @@ class TemperatureAlertPersistenceTest {
 
         assertEquals(2, persistedBreaches(sensorId));
         assertTrue(readingsFor(sensorId).isEmpty());
+        assertFalse(incidentRepository.existsBySensorIdAndRecoveredAtIsNull(sensorId));
     }
 
     private int persistedBreaches(String sensorId) {
@@ -168,6 +175,7 @@ class TemperatureAlertPersistenceTest {
 
     private TelemetryRequest reading(String sensorId, double temperature) {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId(sensorId);
         request.setLocation("Persistence Test");
         request.setVoltage(230.0);

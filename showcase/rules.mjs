@@ -10,6 +10,7 @@ export const STATUSES = ['OK', 'ALARM', 'MECHANICAL_DAMAGE', 'ALARM_AND_MECHANIC
 
 export function evaluateReading(input, thresholds = DEFAULT_THRESHOLDS) {
     const errors = [];
+    if (typeof input?.eventId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.eventId)) errors.push('eventId');
     if (typeof input?.sensorId !== 'string' || !input.sensorId.trim() || input.sensorId.length > 255) errors.push('sensorId');
     if (input?.location != null && (typeof input.location !== 'string' || input.location.length > 255)) errors.push('location');
     for (const key of ['voltage', 'current', 'frequency', 'temperature', 'vibration']) {

@@ -12,9 +12,12 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface TelemetryRepository extends JpaRepository<Telemetry, Long> {
+    Optional<Telemetry> findBySensorIdAndEventId(String sensorId, UUID eventId);
+
     List<Telemetry> findBySensorIdAndTimestampAfter(String sensorId, LocalDateTime timestamp);
 
     Optional<Telemetry> findFirstBySensorIdOrderByTimestampDescIdDesc(String sensorId);
@@ -29,7 +32,7 @@ public interface TelemetryRepository extends JpaRepository<Telemetry, Long> {
             @Param("until") LocalDateTime until,
             Pageable pageable);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Modifying
     @Query("DELETE FROM Telemetry t " +
             "WHERE t.sensorId = :sensorId AND t.timestamp < :cutoff")
     int deleteDemoReadingsOlderThan(

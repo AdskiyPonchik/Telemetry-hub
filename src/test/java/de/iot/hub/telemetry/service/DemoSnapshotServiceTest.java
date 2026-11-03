@@ -7,6 +7,10 @@ import de.iot.hub.telemetry.dto.DemoSnapshotResponse;
 import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.model.TelemetryStatus;
+import de.iot.hub.telemetry.model.TemperatureAlertState;
+import de.iot.hub.telemetry.model.TemperatureIncident;
+import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
+import de.iot.hub.telemetry.repository.TemperatureIncidentRepository;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import java.time.Clock;
@@ -41,6 +45,12 @@ class DemoSnapshotServiceTest {
     @Mock
     private SensorThresholdRepository thresholdRepository;
 
+    @Mock
+    private TemperatureAlertStateRepository stateRepository;
+
+    @Mock
+    private TemperatureIncidentRepository incidentRepository;
+
     private DemoSnapshotService service;
 
     @BeforeEach
@@ -60,7 +70,7 @@ class DemoSnapshotServiceTest {
                 thresholdRepository,
                 telemetryProperties,
                 demoProperties,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC), stateRepository, incidentRepository);
     }
 
     @Test
@@ -78,6 +88,9 @@ class DemoSnapshotServiceTest {
         assertNull(snapshot.latest());
         assertEquals(List.of(), snapshot.readings());
         assertNull(snapshot.analytics());
+        assertNull(snapshot.temperatureAlert());
+        assertNull(snapshot.activeIncident());
+        assertEquals(List.of(), snapshot.recentIncidents());
         assertEquals(80.0, snapshot.thresholds().maxTemperature());
         assertEquals(10.0, snapshot.thresholds().maxVibration());
     }
@@ -138,6 +151,35 @@ class DemoSnapshotServiceTest {
                 .thenThrow(new RuntimeException("database unavailable"));
 
         assertThrows(RuntimeException.class, service::getSnapshot);
+    }
+
+    @Test
+    void snapshotIncludesActiveIncidentDuringRecoveryAndRecoveredHistory() {
+        TemperatureAlertState state = new TemperatureAlertState();
+        state.setSensorId("MGD-PWR-01");
+        state.setConsecutiveBreaches(0);
+        state.setConsecutiveNormalReadings(2);
+        TemperatureIncident active = TemperatureIncident.builder().id(11L).sensorId("MGD-PWR-01")
+                .openedAt(NOW.minusSeconds(50)).thresholdAtOpen(80.0).temperatureAtOpen(85.0).build();
+        TemperatureIncident recovered = TemperatureIncident.builder().id(10L).sensorId("MGD-PWR-01")
+                .openedAt(NOW.minusSeconds(500)).recoveredAt(NOW.minusSeconds(400)).build();
+        when(stateRepository.findById("MGD-PWR-01")).thenReturn(Optional.of(state));
+        when(incidentRepository.findBySensorIdAndRecoveredAtIsNull("MGD-PWR-01"))
+                .thenReturn(Optional.of(active));
+        when(incidentRepository.findTop5BySensorIdAndRecoveredAtIsNotNullOrderByIdDesc("MGD-PWR-01"))
+                .thenReturn(List.of(recovered));
+
+        DemoSnapshotResponse snapshot = service.getSnapshot();
+
+        assertEquals(true, snapshot.temperatureAlert().alertActive());
+        assertEquals(0, snapshot.temperatureAlert().consecutiveBreaches());
+        assertEquals(2, snapshot.temperatureAlert().consecutiveNormalReadings());
+        assertEquals(11L, snapshot.activeIncident().id());
+        assertEquals(true, snapshot.activeIncident().active());
+        assertEquals(10L, snapshot.recentIncidents().getFirst().id());
+        assertEquals(false, snapshot.recentIncidents().getFirst().active());
+        org.mockito.Mockito.verify(incidentRepository)
+                .findTop5BySensorIdAndRecoveredAtIsNotNullOrderByIdDesc("MGD-PWR-01");
     }
 
     private Telemetry reading(long id, LocalDateTime timestamp) {

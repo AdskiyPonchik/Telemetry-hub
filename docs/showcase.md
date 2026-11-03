@@ -6,9 +6,15 @@ The live view reads PostgreSQL data received from the Python simulator; sandbox
 buttons never send telemetry to the backend.
 
 The page lives in `showcase/`, uses HTML/CSS/JavaScript and an SVG chart, and has
-complete English and German interfaces. Neutral graphite surfaces and restrained
-semantic status colors follow the calm design direction selected from
-[Dark Mode Design](https://www.darkmodedesign.com/). The public host is intended to be
+complete English and German interfaces. The light equipment monitor uses muted
+teal chrome, opaque pale panels, a blue signal trace and separate status colors.
+Monitor, Sandbox and About are separate views with direct hash links; the monitor
+opens on temperature and places the active incident beside the chart. A compact
+sensor header shows its identity, location, latest reading time and status from
+the selected data source. Recovered incidents expand to show their details.
+Analytics and recent readings remain available in disclosure panels.
+See [the visual standard](../DESIGN_SYSTEM.md) for the current palette.
+The public host is intended to be
 `telemetry.adskiyponchik.dev`. Repository contents alone do not prove deployment.
 
 ## Local visual preview
@@ -22,7 +28,11 @@ python3 -m http.server 8092 --bind 127.0.0.1 --directory showcase
 Open `http://127.0.0.1:8092/?preview=1`. The permanent preview notice identifies
 illustrative data. Without `?preview=1`, the page requests the real API and shows
 an unavailable state when no backend is connected. It never substitutes generated
-data after a connection failure. Stop the preview server with Ctrl+C.
+data after a connection failure. `showcase/preview.mjs` builds a deterministic
+illustrative scenario: the third hot reading opens an incident and the latest
+normal reading advances recovery to 1/3. Preview statistics are explicitly
+labelled as generated. No preview request is sent to the API. Stop the preview
+server with Ctrl+C.
 
 ## Public data contract
 
@@ -37,16 +47,20 @@ It has no visitor-controlled sensor, window or page-size parameters.
 | `latest` | Latest stored reading for the demo sensor, including when older than the chart window; `null` before the first reading |
 | `readings` | At most 180 most recent readings within 15 minutes, presented in ascending timestamp/ID order |
 | `analytics` | Existing aggregate fields `sensorId`, `totalReadings`, `alarmCount`, `avgVoltage`, `avgFrequency`; `null` when the analytics window has no data |
+| `temperatureAlert` | Persisted `sensorID`, `consecutiveBreaches`, `alertActive`, `consecutiveNormalReadings`; `null` before state exists |
+| `activeIncident` | One active temperature incident for this sensor, or `null` |
+| `recentIncidents` | At most five recovered incidents for this sensor, newest ID first |
 
 Reading fields match the existing telemetry DTO, except this endpoint explicitly
 serializes timestamps in UTC. The dedicated deployment uses a new database and
 UTC JVM; do not reuse a database containing local timestamps with an unknown zone.
-Existing endpoints retain their contracts.
+Existing reading timestamps retain their format; ingestion now requires `eventId`.
 
 `alarmCount` counts `ALARM` and `ALARM_AND_MECHANICAL_DAMAGE`, **not** standalone
 `MECHANICAL_DAMAGE`. The latter indicates a temperature/vibration threshold breach,
 not a diagnosed physical failure. Current is recorded but has no alarm threshold.
-Equality with every configured threshold is accepted as normal.
+Equality with every configured threshold is accepted as normal. The API does not
+define a vibration unit; the UI displays its value without inventing one.
 
 The UI polls every five seconds while visible. Data older than 20 seconds is
 marked stale. API failures preserve the last displayed data with an explicit
@@ -64,13 +78,23 @@ The showcase mode sends one reading every five seconds. Each two-minute cycle is
 | 80–99 | Combined anomaly |
 | 100–119 | Recovery to normal |
 
-HTTP `201` means accepted; it does not mean the reading's domain status is `OK`.
-There is no delivery queue or idempotent retry protocol. After a transport error,
-the simulator continues with the next observation.
+HTTP `201` means a new event was accepted; it does not mean domain status `OK`.
+An identical retry returns `200` with the original receipt. The simulator generates
+one UUID per observation and makes at most three attempts for network errors or
+`5xx`, preserving that payload; delays are 0.5 and 1 second. Other HTTP failures
+are not retried. There is no persistent delivery queue and exhausted attempts
+leave delivery unconfirmed.
 
-Only the demo profile schedules retention. It deletes the configured demo sensor's
-readings older than seven days once per hour. Other sensors are untouched. The
-24-hour aggregate is computed from stored data, not generated frontend counters.
+Only the demo profile schedules retention. Under the demo sensor's state lock,
+it deletes that sensor's readings and recovered incidents older than the configured
+retention (seven days by default); active incidents and other sensors are retained.
+Duplicate protection ends when the original reading is deleted.
+
+The incident panel displays opening details, recovery progress and acknowledgement
+independently. Migrated incidents can have unknown opening time, temperature and
+threshold; the UI labels these as unknown. The browser never acknowledges or sends
+readings. Preview incidents are explicitly illustrative. See
+[the incident API and acceptance scenario](temperature-incidents.md).
 
 ## Sandbox and verification
 

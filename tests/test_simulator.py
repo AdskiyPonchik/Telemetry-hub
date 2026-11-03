@@ -5,6 +5,7 @@ import random
 import sys
 import unittest
 from unittest.mock import Mock, patch
+from uuid import UUID
 
 import requests
 
@@ -115,25 +116,72 @@ class SubmissionTest(unittest.TestCase):
         self.assertIn("accepted:", output.getvalue())
         self.assertNotIn("-> OK", output.getvalue())
 
-    def test_connection_failure_is_not_retried(self):
-        post = Mock(side_effect=requests.Timeout("timed out"))
+    def test_new_measurements_have_fresh_valid_uuids_even_with_identical_rng(self):
+        for generator in [simulator.generate_showcase_telemetry, simulator.generate_random_telemetry]:
+            first = generator(0, rng=random.Random(1))
+            second = generator(0, rng=random.Random(1))
+            self.assertEqual(4, UUID(first["eventId"]).version)
+            self.assertEqual(4, UUID(second["eventId"]).version)
+            self.assertNotEqual(first["eventId"], second["eventId"])
+            self.assertEqual(
+                {key: value for key, value in first.items() if key != "eventId"},
+                {key: value for key, value in second.items() if key != "eventId"},
+            )
+
+    def test_timeout_and_5xx_retry_with_same_identity_and_payload_then_accept_200(self):
+        original = self.reading.copy()
+        post = Mock(side_effect=[
+            requests.Timeout("response lost"),
+            Mock(status_code=503, text="unavailable"),
+            Mock(status_code=200, text=""),
+        ])
+        sleep = Mock()
 
         with patch("sys.stdout", new_callable=io.StringIO) as output:
-            accepted = simulator.submit_reading(self.config, self.reading, post)
+            accepted = simulator.submit_reading(self.config, self.reading, post, sleep)
 
-        self.assertFalse(accepted)
-        self.assertEqual(1, post.call_count)
-        self.assertIn("send failed: timed out", output.getvalue())
+        self.assertTrue(accepted)
+        self.assertEqual(3, post.call_count)
+        self.assertEqual(original, self.reading)
+        for call in post.call_args_list:
+            self.assertEqual(original, call.kwargs["json"])
+            self.assertEqual(2.5, call.kwargs["timeout"])
+        self.assertEqual([0.5, 1.0], [call.args[0] for call in sleep.call_args_list])
+        self.assertIn("accepted: duplicate receipt", output.getvalue())
+        self.assertNotIn("-> OK", output.getvalue())
 
-    def test_non_201_response_is_rejected_without_retry(self):
-        post = Mock(return_value=Mock(status_code=503, text="unavailable"))
+    def test_transient_failure_stops_after_three_total_attempts_and_reports_loss(self):
+        for outcome in [requests.ConnectionError("offline"), Mock(status_code=500, text="failed")]:
+            with self.subTest(outcome=outcome):
+                post = Mock(side_effect=outcome) if isinstance(outcome, Exception) else Mock(return_value=outcome)
+                sleep = Mock()
+                with patch("sys.stdout", new_callable=io.StringIO) as output:
+                    accepted = simulator.submit_reading(self.config, self.reading, post, sleep)
+                self.assertFalse(accepted)
+                self.assertEqual(3, post.call_count)
+                self.assertEqual(2, sleep.call_count)
+                self.assertIn("observation discarded locally", output.getvalue())
+                self.assertIn("delivery unconfirmed", output.getvalue())
+                self.assertIn("no persistent queue", output.getvalue())
 
+    def test_4xx_including_conflict_are_never_retried(self):
+        for status in [400, 401, 403, 404, 409, 429]:
+            with self.subTest(status=status):
+                post = Mock(return_value=Mock(status_code=status, text="rejected"))
+                sleep = Mock()
+                with patch("sys.stdout", new_callable=io.StringIO) as output:
+                    accepted = simulator.submit_reading(self.config, self.reading, post, sleep)
+                self.assertFalse(accepted)
+                self.assertEqual(1, post.call_count)
+                sleep.assert_not_called()
+                self.assertIn(f"rejected: HTTP {status}", output.getvalue())
+
+    def test_201_after_retry_is_reported_as_created(self):
+        post = Mock(side_effect=[requests.Timeout("timeout"), Mock(status_code=201, text="")])
         with patch("sys.stdout", new_callable=io.StringIO) as output:
-            accepted = simulator.submit_reading(self.config, self.reading, post)
-
-        self.assertFalse(accepted)
-        self.assertEqual(1, post.call_count)
-        self.assertIn("rejected: HTTP 503", output.getvalue())
+            self.assertTrue(simulator.submit_reading(self.config, self.reading, post, Mock()))
+        self.assertEqual(2, post.call_count)
+        self.assertIn("accepted: created", output.getvalue())
 
 
 class MainTest(unittest.TestCase):

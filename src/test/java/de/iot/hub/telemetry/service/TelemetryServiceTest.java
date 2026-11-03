@@ -6,6 +6,12 @@ import de.iot.hub.telemetry.model.SensorThresholds;
 import de.iot.hub.telemetry.model.Telemetry;
 import de.iot.hub.telemetry.model.TelemetryStatus;
 import de.iot.hub.telemetry.model.TemperatureAlertState;
+import de.iot.hub.telemetry.model.TemperatureIncident;
+import de.iot.hub.telemetry.repository.TemperatureIncidentRepository;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.UUID;
 import de.iot.hub.telemetry.repository.SensorThresholdRepository;
 import de.iot.hub.telemetry.repository.TelemetryRepository;
 import de.iot.hub.telemetry.repository.TemperatureAlertStateRepository;
@@ -34,6 +40,9 @@ public class TelemetryServiceTest {
     @Mock
     private TemperatureAlertStateRepository stateRepo;
 
+    @Mock
+    private TemperatureIncidentRepository incidentRepo;
+
     private TelemetryService service;
 
     @BeforeEach
@@ -47,7 +56,13 @@ public class TelemetryServiceTest {
         props.getThresholds().setDefaultMaxVibration(10.0);
 
         service = new TelemetryService(repo, props, thresholdRepo,
-                new TemperatureAlertEvaluator(), stateRepo);
+                new TemperatureAlertEvaluator(), stateRepo, incidentRepo,
+                Clock.fixed(Instant.parse("2026-10-23T12:00:00Z"), ZoneOffset.UTC));
+        Mockito.when(repo.saveAndFlush(Mockito.any(Telemetry.class))).thenAnswer(invocation -> {
+            Telemetry telemetry = invocation.getArgument(0);
+            telemetry.setId(42L);
+            return telemetry;
+        });
         Mockito.when(stateRepo.findBySensorIdForUpdate(Mockito.anyString())).thenAnswer(invocation -> {
             TemperatureAlertState state = new TemperatureAlertState();
             state.setSensorId(invocation.getArgument(0));
@@ -57,7 +72,7 @@ public class TelemetryServiceTest {
 
     private void verifySavedTelemetry(Consumer<Telemetry> assertions) {
         ArgumentCaptor<Telemetry> captor = ArgumentCaptor.forClass(Telemetry.class);
-        verify(repo).save(captor.capture());
+        verify(repo).saveAndFlush(captor.capture());
         assertions.accept(captor.getValue());
     }
 
@@ -68,6 +83,7 @@ public class TelemetryServiceTest {
         state.setConsecutiveBreaches(2);
         Mockito.when(stateRepo.findBySensorIdForUpdate("STREAK")).thenReturn(Optional.of(state));
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("STREAK");
         request.setVoltage(230.0);
         request.setFrequency(50.0);
@@ -78,16 +94,21 @@ public class TelemetryServiceTest {
         service.processTelemetry(request);
 
         assertEquals(3, state.getConsecutiveBreaches());
-        var order = Mockito.inOrder(stateRepo, repo);
+        var order = Mockito.inOrder(stateRepo, incidentRepo, repo);
         order.verify(stateRepo).initializeIfAbsent("STREAK");
         order.verify(stateRepo).findBySensorIdForUpdate("STREAK");
-        order.verify(stateRepo).save(state);
-        order.verify(repo).save(Mockito.any(Telemetry.class));
+        order.verify(incidentRepo).findActiveForUpdate("STREAK");
+        ArgumentCaptor<TemperatureIncident> incidentCaptor = ArgumentCaptor.forClass(TemperatureIncident.class);
+        order.verify(incidentRepo).save(incidentCaptor.capture());
+        assertEquals(80.0, incidentCaptor.getValue().getThresholdAtOpen());
+        assertEquals(81.0, incidentCaptor.getValue().getTemperatureAtOpen());
+        order.verify(repo).saveAndFlush(Mockito.any(Telemetry.class));
     }
 
     @Test
     void whenVoltageIsHigh_thenStatusShouldBeAlarm() {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("TEST-01");
         request.setVoltage(260.0);
         request.setFrequency(50.0);
@@ -105,6 +126,7 @@ public class TelemetryServiceTest {
     @Test
     void whenFrequencyIsLow_thenStatusShouldBeAlarm() {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("TEST-02");
         request.setVoltage(230.0);
         request.setFrequency(48.9);
@@ -122,6 +144,7 @@ public class TelemetryServiceTest {
     @Test
     void everythingShouldBeNormal() {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("TEST-03");
         request.setVoltage(230.0);
         request.setFrequency(50.0);
@@ -139,6 +162,7 @@ public class TelemetryServiceTest {
     @Test
     void whenVoltageAndTemperatureAreHigh_thenStatusShouldBeCombined() {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("TEST-04");
         request.setVoltage(260.0);
         request.setFrequency(50.0);
@@ -156,6 +180,7 @@ public class TelemetryServiceTest {
     @Test
     void whenSensorHasCustomThresholds_thenStatusShouldBeOk() {
         TelemetryRequest request = new TelemetryRequest();
+        request.setEventId(UUID.randomUUID());
         request.setSensorId("TEST-CUSTOM");
         request.setVoltage(230.0);
         request.setFrequency(50.0);
@@ -164,6 +189,9 @@ public class TelemetryServiceTest {
         request.setVibration(2.4);
 
         SensorThresholds customConfig = new SensorThresholds("TEST-CUSTOM", 150.0, 15.0);
+        TemperatureAlertState state = new TemperatureAlertState();
+        state.setSensorId("TEST-CUSTOM");
+        Mockito.when(stateRepo.findBySensorIdForUpdate("TEST-CUSTOM")).thenReturn(Optional.of(state));
 
         Mockito.when(thresholdRepo.findById("TEST-CUSTOM"))
                 .thenReturn(Optional.of(customConfig));
@@ -173,9 +201,8 @@ public class TelemetryServiceTest {
         verifySavedTelemetry(telemetry -> {
             assertEquals(TelemetryStatus.OK, telemetry.getStatus());
         });
-        ArgumentCaptor<TemperatureAlertState> stateCaptor = ArgumentCaptor.forClass(TemperatureAlertState.class);
-        verify(stateRepo).save(stateCaptor.capture());
-        assertEquals(0, stateCaptor.getValue().getConsecutiveBreaches());
+        assertEquals(0, state.getConsecutiveBreaches());
+        Mockito.verify(incidentRepo, Mockito.never()).save(Mockito.any());
     }
 
 }
